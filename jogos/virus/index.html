@@ -1,0 +1,2533 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Vírus!</title>
+<meta name="description" content="O jogo de cartas mais contagioso, para jogar no telemóvel sem internet.">
+<meta name="theme-color" content="#2a1260">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vírus!">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --ink: #1d1330;
+  --bg1: #25c2b4;
+  --bg2: #0d6a86;
+  --paper: #fff8ec;
+  --gold: #ffcc1f;
+  --purple: #8b56d8;
+  --red: #ec4038;
+  --blue: #2f86e8;
+  --yellow: #f7c51c;
+  --green: #35b84b;
+  --font: "Nunito", "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg2);
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+input { font-family: inherit; }
+
+.screen {
+  position: fixed; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M28 18h8v10h10v8H36v10h-8V36H18v-8h10z' fill='%23ffffff' fill-opacity='.07'/%3E%3C/svg%3E"),
+    radial-gradient(120% 80% at 50% 0%, var(--bg1), var(--bg2));
+  padding-top: var(--safe-t);
+  padding-bottom: var(--safe-b);
+  -webkit-overflow-scrolling: touch;
+}
+.screen.bg-home {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M28 18h8v10h10v8H36v10h-8V36H18v-8h10z' fill='%23ffffff' fill-opacity='.08'/%3E%3C/svg%3E"),
+    radial-gradient(100% 70% at 50% 10%, #7a4fd0, #2a1260);
+}
+.screen.game-screen { overflow: hidden; }
+
+/* ---------- Páginas ---------- */
+.page { max-width: 720px; margin: 0 auto; padding: 16px 16px 40px; }
+.center-page { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; }
+.page-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.page-head h1 { margin: 0; font-size: 24px; color: #fff; text-shadow: 0 2px 0 var(--ink); font-weight: 900; }
+.logo { width: min(86vw, 420px); filter: drop-shadow(0 6px 0 rgba(0, 0, 0, .25)); animation: bob 3s ease-in-out infinite; }
+.logo.small { width: min(70vw, 320px); }
+.logo svg { width: 100%; height: auto; display: block; }
+@keyframes bob { 50% { transform: translateY(-6px) rotate(1deg); } }
+.h-sub { color: #fff; font-size: 22px; margin: 4px 0 8px; text-shadow: 0 2px 0 var(--ink); }
+.hello { color: #fff; font-size: 18px; margin: 0 0 8px; text-shadow: 0 1px 0 var(--ink); }
+.note { font-size: 14px; opacity: .8; margin: 8px 0 0; }
+.note.center { text-align: center; color: #fff; }
+.muted { opacity: .6; font-weight: 600; }
+
+.profiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; max-width: 560px; }
+.prof-card {
+  width: 140px; padding: 14px 8px 12px; border-radius: 22px; border: 3px solid var(--ink);
+  background: linear-gradient(170deg, #fff, #ffeccd); box-shadow: 0 5px 0 var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative;
+  transition: transform .12s;
+}
+.prof-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 12px; border-radius: 18px 18px 0 0; background: var(--pc, #ccc); }
+.prof-card:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.prof-card.add::before { display: none; }
+.prof-card.add { background: rgba(255, 255, 255, .15); color: #fff; border-style: dashed; border-color: #fff; box-shadow: none; }
+.prof-av { font-size: 52px; line-height: 1.1; }
+.prof-name { font-weight: 900; font-size: 18px; }
+.prof-sub { font-size: 13px; opacity: .7; font-weight: 700; }
+.deco-cards { display: flex; justify-content: center; margin-top: 18px; --w: 64px; pointer-events: none; }
+.deco-cards > div { transform: rotate(var(--r)); margin: 0 -6px; animation: bob 3.2s ease-in-out infinite; }
+.deco-cards > div:nth-child(2) { animation-delay: -.8s; }
+.deco-cards > div:nth-child(3) { animation-delay: -1.6s; }
+.deco-cards > div:nth-child(4) { animation-delay: -2.4s; }
+
+.menu-top { position: absolute; top: calc(10px + var(--safe-t)); left: 12px; }
+.chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 2px solid var(--ink); background: #fff; font-weight: 800; font-size: 15px; box-shadow: 0 3px 0 var(--ink); }
+.chip span { font-size: 22px; }
+.chip small { opacity: .55; font-weight: 700; }
+.menu-btns { display: flex; flex-direction: column; gap: 12px; width: min(92vw, 400px); }
+.menu-btns > * { flex-shrink: 0; }
+.menu-row { display: flex; gap: 12px; }
+.menu-row .btn { flex: 1; }
+
+/* ---------- Botões ---------- */
+.btn {
+  border: 3px solid var(--ink); border-radius: 16px; background: #fff; font-weight: 900; font-size: 16px;
+  padding: 10px 14px; box-shadow: 0 4px 0 var(--ink); transition: transform .08s, box-shadow .08s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
+}
+.btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn:disabled { opacity: .45; }
+.btn.big { font-size: 22px; padding: 14px 18px; border-radius: 20px; }
+.btn.mid { font-size: 16px; padding: 12px 10px; }
+.btn.primary { background: linear-gradient(180deg, #ffe066, var(--gold)); }
+.btn.green { background: linear-gradient(180deg, #8ef08a, var(--green)); color: #fff; text-shadow: 0 2px 0 var(--ink); }
+.btn.teal { background: linear-gradient(180deg, #8ff0e6, #25c2b4); }
+.btn.red { background: linear-gradient(180deg, #ff8f86, var(--red)); color: #fff; text-shadow: 0 1px 0 var(--ink); }
+.btn.ghost { background: #f0eaf8; }
+.btn.wide { width: 100%; }
+.pulse-btn { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.04); } }
+.pill { background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+.icon-btn {
+  width: 42px; height: 42px; border-radius: 14px; border: 3px solid var(--ink); background: #fff;
+  box-shadow: 0 3px 0 var(--ink); font-size: 20px; font-weight: 900; display: grid; place-items: center; padding: 0; flex: none;
+}
+.icon-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.icon-btn:disabled { opacity: .35; }
+
+/* ---------- Painéis ---------- */
+.panel { background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; padding: 14px; margin-bottom: 14px; box-shadow: 0 4px 0 rgba(0, 0, 0, .25); }
+.panel h3 { margin: 0 0 10px; font-size: 18px; font-weight: 900; }
+.panel.danger { display: flex; flex-direction: column; gap: 10px; }
+.seg { display: flex; gap: 8px; }
+.seg-b { flex: 1; border: 3px solid var(--ink); border-radius: 14px; background: #fff; padding: 10px 4px; font-weight: 900; font-size: 18px; box-shadow: 0 3px 0 var(--ink); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.seg-b.on { background: var(--gold); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.seg.lv .seg-b { font-size: 15px; }
+.seg-b .em { font-size: 26px; }
+.bot-row { display: flex; justify-content: center; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.bot-av { width: 52px; height: 52px; animation: pop .35s cubic-bezier(.3, 1.6, .5, 1) both; }
+.bot-av:nth-child(2) { animation-delay: .05s; } .bot-av:nth-child(3) { animation-delay: .1s; } .bot-av:nth-child(4) { animation-delay: .15s; } .bot-av:nth-child(5) { animation-delay: .2s; }
+@keyframes pop { from { transform: scale(0); } }
+
+.toggle { display: flex; align-items: center; gap: 12px; padding: 6px 0; cursor: pointer; }
+.toggle + .toggle { border-top: 2px dashed rgba(0, 0, 0, .1); }
+.toggle input { display: none; }
+.toggle small { opacity: .7; font-weight: 600; }
+.tg { flex: none; width: 54px; height: 32px; border-radius: 999px; background: #d5cfe0; border: 3px solid var(--ink); position: relative; transition: background .2s; }
+.tg::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); transition: transform .2s; }
+.toggle input:checked + .tg { background: var(--green); }
+.toggle input:checked + .tg::after { transform: translateX(22px); }
+.extras { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.extra { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; border: 3px solid rgba(0, 0, 0, .15); cursor: pointer; transition: all .15s; background: #fff; }
+.extra.on { border-color: var(--ink); background: #fff3c4; box-shadow: 0 3px 0 var(--ink); }
+.extra input { display: none; }
+.extra-card { --w: 46px; flex: none; }
+.extra b { display: block; font-size: 14px; line-height: 1.1; }
+.extra small { font-size: 12px; opacity: .75; line-height: 1.15; display: block; margin-top: 2px; }
+@media (max-width: 460px) { .extras { grid-template-columns: 1fr; } }
+
+.prof-edit { width: 100%; display: flex; align-items: center; gap: 12px; background: none; border: none; text-align: left; font-size: 16px; padding: 0; }
+.prof-edit > span:nth-child(2) { flex: 1; }
+.prof-edit small { display: block; opacity: .65; }
+
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.tile { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 10px 6px; text-align: center; box-shadow: 0 4px 0 rgba(0, 0, 0, .25); }
+.tile b { display: block; font-size: 28px; font-weight: 900; }
+.tile span { font-size: 12px; font-weight: 700; opacity: .75; line-height: 1.1; display: block; }
+.tile.gold { background: linear-gradient(180deg, #fff3a8, var(--gold)); }
+.bar-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-weight: 800; }
+.bar-l { width: 96px; flex: none; font-size: 15px; }
+.bar { flex: 1; height: 18px; border-radius: 999px; background: #e6dff0; border: 2px solid var(--ink); overflow: hidden; }
+.bar-f { height: 100%; border-radius: 999px; transition: width .8s; }
+.lv-easy { background: var(--green); } .lv-normal { background: var(--blue); } .lv-hard { background: var(--red); }
+.bar-v { width: 48px; text-align: right; font-size: 14px; }
+.fun { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.fun-i { background: #fff; border-radius: 14px; border: 2px solid rgba(0, 0, 0, .12); text-align: center; padding: 8px 4px; }
+.fun-i span { font-size: 24px; display: block; }
+.fun-i b { font-size: 20px; display: block; }
+.fun-i small { font-size: 11px; font-weight: 700; opacity: .7; line-height: 1.1; display: block; }
+.hist { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 2px dashed rgba(0, 0, 0, .1); }
+.hist-r { font-size: 24px; }
+.hist-t { flex: 1; min-width: 0; }
+.hist-t b { display: block; }
+.hist-t small { opacity: .65; font-weight: 600; }
+.hist-n { font-weight: 800; font-size: 13px; opacity: .7; }
+.hist.w b { color: #16722a; }
+
+.medals { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.medal { background: rgba(255, 255, 255, .5); border: 3px dashed rgba(29, 19, 48, .35); border-radius: 18px; padding: 12px 8px; text-align: center; }
+.medal.got { background: var(--paper); border: 3px solid var(--ink); box-shadow: 0 4px 0 rgba(0, 0, 0, .25); }
+.medal-i { font-size: 40px; filter: grayscale(1); opacity: .5; }
+.medal.got .medal-i { filter: none; opacity: 1; }
+.medal b { display: block; font-size: 15px; }
+.medal small { display: block; font-size: 12px; opacity: .75; font-weight: 600; margin-top: 2px; }
+.medal em { display: block; font-size: 11px; opacity: .6; margin-top: 4px; }
+
+.rule-cards { display: flex; gap: 6px; flex-wrap: wrap; --w: 62px; margin-bottom: 10px; }
+.rule-t { font-size: 16px; line-height: 1.4; }
+.rule-t ul { margin: 6px 0; padding-left: 20px; }
+.rule-t li { margin: 3px 0; }
+.tl li { margin: 6px 0; }
+
+/* ---------- Cartas ---------- */
+.card {
+  --cw: var(--w, 80px);
+  width: var(--cw); height: calc(var(--cw) * 1.4);
+  border-radius: calc(var(--cw) * .12);
+  border: max(1.5px, calc(var(--cw) * .025)) solid var(--ink);
+  position: relative; flex: none;
+  background: linear-gradient(160deg, var(--f1), var(--f2));
+  box-shadow: 0 calc(var(--cw) * .04) 0 rgba(0, 0, 0, .3);
+  --f1: #999; --f2: #555;
+}
+.col-red { --f1: #ff6a5e; --f2: #b21d22; }
+.col-blue { --f1: #58a6ff; --f2: #1a4f9c; }
+.col-yellow { --f1: #ffe066; --f2: #cf9500; }
+.col-green { --f1: #6fdc70; --f2: #1a7a2e; }
+.col-purple { --f1: #b388ff; --f2: #4d2596; }
+.col-multi { background: conic-gradient(from 20deg, #ec4038, #f7c51c, #35b84b, #2f86e8, #a24fd6, #ec4038); }
+.card-in {
+  position: absolute; left: 6%; right: 6%; top: 5%; bottom: 21%;
+  border-radius: calc(var(--cw) * .08);
+  background: radial-gradient(circle at 50% 35%, #fffef8, #f4e7cc);
+  border: max(1px, calc(var(--cw) * .02)) solid var(--ink);
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+}
+.t-virus .card-in { background: radial-gradient(circle at 50% 35%, #fbfff2, #dcebc4); }
+.t-med .card-in { background: radial-gradient(circle at 50% 35%, #f7fdff, #cfe8f5); }
+.t-treat .card-in { background: radial-gradient(circle at 50% 35%, #fffaff, #ead8f7); }
+.card-in svg { width: 100%; height: 100%; display: block; }
+.card-badge {
+  position: absolute; top: 1%; left: 1%; width: 24%; height: calc(var(--cw) * .24);
+  border-radius: 50%; background: #fff; border: max(1px, calc(var(--cw) * .02)) solid var(--ink);
+  display: grid; place-items: center; padding: 2px;
+}
+.card-badge svg { width: 100%; height: 100%; }
+.card-name {
+  position: absolute; left: 3%; right: 3%; bottom: 3%; height: 16%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: calc(var(--cw) * .135); color: #fff; letter-spacing: .01em;
+  text-shadow: -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink), 0 2px 0 var(--ink);
+  white-space: nowrap; overflow: hidden; line-height: 1;
+}
+.card.mini .card-name, .card.mini .card-badge { display: none; }
+.card.mini .card-in { left: 7%; right: 7%; top: 5%; bottom: 5%; }
+.card.back { background: #2a1260; overflow: hidden; }
+.card.back svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- Jogo ---------- */
+#game {
+  position: absolute; inset: 0; top: var(--safe-t); bottom: var(--safe-b);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "top" "opps" "mid" "me" "hand";
+  --hw: 90px; --bw: 64px; --ow: 40px; --dw: 50px; --cols: 1;
+}
+#game.land {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "top top" "opps me" "opps hand" "mid hand";
+}
+.g-top { grid-area: top; display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+.g-top .icon-btn { width: 38px; height: 38px; font-size: 18px; border-radius: 12px; }
+.g-status { flex: 1; text-align: center; color: #fff; font-weight: 900; font-size: 17px; text-shadow: 0 2px 0 var(--ink); display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.g-status .your { color: var(--gold); animation: pulse 1.2s ease-in-out infinite; display: inline-block; }
+.av-s { width: 26px; height: 26px; display: inline-block; flex: none; }
+.av-s svg { width: 100%; height: 100%; }
+.g-tools { display: flex; gap: 6px; }
+.dots i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #fff; margin: 0 1px; animation: dot 1s infinite; }
+.dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes dot { 50% { transform: translateY(-5px); } }
+
+#opps {
+  grid-area: opps; display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 6px; padding: 2px 6px;
+  align-content: center; overflow: hidden; min-height: 0;
+}
+.opp {
+  background: rgba(255, 255, 255, .88); border: 3px solid var(--ink); border-radius: 16px; padding: 4px 6px 6px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .3); transition: box-shadow .2s, transform .2s, background .2s; min-width: 0;
+}
+.opp.active { background: #fff6cf; box-shadow: 0 0 0 3px var(--gold), 0 3px 0 rgba(0, 0, 0, .3); }
+.opp.target, .opp.hint { animation: glow 1s ease-in-out infinite; cursor: pointer; }
+.opp-head { display: flex; align-items: center; gap: 5px; height: 26px; margin-bottom: 3px; }
+.opp-head .av { width: 26px; height: 26px; flex: none; }
+.opp-head .av svg { width: 100%; height: 100%; }
+.opp-name { font-weight: 900; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.opp-hand { display: flex; gap: 2px; --w: 15px; flex: none; }
+.opp-hand .card { box-shadow: none; border-width: 1px; }
+.opp-hand .card + .card { margin-left: -8px; }
+.opp-hand .card.back svg text { display: none; }
+.hb { font-size: 11px; letter-spacing: -1px; color: #35b84b; font-weight: 900; flex: none; text-shadow: 0 1px 0 rgba(0, 0, 0, .2); }
+.hb.hot { color: #ec4038; animation: pulse .9s infinite; }
+
+.body { display: flex; gap: calc(var(--sw) * .1); justify-content: center; align-items: flex-start; --sw: var(--ow); padding-bottom: calc(var(--sw) * .16); }
+.body .card { --w: var(--sw); }
+.ph { width: var(--sw); height: calc(var(--sw) * 1.4); border-radius: calc(var(--sw) * .12); border: 2px dashed rgba(29, 19, 48, .35); flex: none; position: relative; background: rgba(255, 255, 255, .25); }
+.ph-red { border-color: rgba(236, 64, 56, .7); background: rgba(236, 64, 56, .12); }
+.ph-blue { border-color: rgba(47, 134, 232, .7); background: rgba(47, 134, 232, .12); }
+.ph-yellow { border-color: rgba(214, 160, 0, .8); background: rgba(247, 197, 28, .14); }
+.ph-green { border-color: rgba(53, 184, 75, .75); background: rgba(53, 184, 75, .12); }
+.ph-multi { border-color: rgba(162, 79, 214, .35); background: transparent; opacity: .55; }
+.slot { position: relative; flex: none; width: var(--sw); height: calc(var(--sw) * 1.4); transition: filter .2s; }
+.slot .mod { position: absolute; width: calc(var(--sw) * .56); bottom: calc(var(--sw) * -.16); right: calc(var(--sw) * -.1); transform: rotate(12deg); z-index: 2; pointer-events: none; }
+.slot .mod .card { --w: calc(var(--sw) * .56); box-shadow: 0 2px 4px rgba(0, 0, 0, .35); }
+.slot .mod-1 { right: auto; left: calc(var(--sw) * -.1); transform: rotate(-12deg); }
+.slot .shield { position: absolute; width: calc(var(--sw) * .5); right: calc(var(--sw) * -.1); bottom: calc(var(--sw) * -.14); z-index: 2; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35)); animation: shieldIn .5s cubic-bezier(.3, 1.6, .5, 1); pointer-events: none; }
+.slot .shield svg { width: 100%; display: block; }
+@keyframes shieldIn { from { transform: scale(0) rotate(-40deg); } }
+.slot.st-immune > .card { box-shadow: 0 0 0 3px var(--gold), 0 0 14px 4px rgba(255, 204, 31, .8); }
+.slot.st-infected > .card .card-in { background: radial-gradient(circle at 50% 35%, #f4ffe6, #b8dca0); }
+.slot.st-infected > .card { animation: queasy 2.4s ease-in-out infinite; }
+@keyframes queasy { 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+.slot.target > .card, .ph.target, .slot.hint > .card { animation: glow 1s ease-in-out infinite; cursor: pointer; }
+.slot.picked > .card { box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--purple); transform: translateY(-6%); }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 0 3px var(--gold), 0 0 10px 2px rgba(255, 204, 31, .7); } 50% { box-shadow: 0 0 0 5px #fff, 0 0 18px 8px rgba(255, 204, 31, .9); } }
+.hint { outline: none; }
+.slot.hint > .card, .ph.hint { animation: glowHint 1s ease-in-out infinite; }
+@keyframes glowHint { 0%, 100% { box-shadow: 0 0 0 3px #3de0ff, 0 0 10px 2px rgba(61, 224, 255, .7); } 50% { box-shadow: 0 0 0 5px #fff, 0 0 18px 8px rgba(61, 224, 255, .9); } }
+
+#mid { grid-area: mid; display: flex; align-items: center; gap: 8px; padding: 4px 8px; --w: var(--dw); }
+.pile { position: relative; width: var(--dw); height: calc(var(--dw) * 1.4); flex: none; }
+.pile .card { --w: var(--dw); }
+.pile[data-deck] .card { box-shadow: 2px 2px 0 var(--ink), 4px 4px 0 #3b1d80, 5px 5px 0 var(--ink); }
+.pile .cnt { position: absolute; bottom: -6px; right: -8px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; font-size: 12px; font-weight: 900; padding: 0 6px; }
+.empty-pile { width: 100%; height: 100%; border: 2px dashed rgba(255, 255, 255, .6); border-radius: 10px; color: rgba(255, 255, 255, .8); font-size: 8px; overflow: hidden; font-weight: 800; display: grid; place-items: center; }
+.pile.disc.target .card, .pile.disc.target .empty-pile { animation: glow 1s infinite; }
+.logline {
+  flex: 1; min-width: 0; align-self: stretch; margin: 4px 0; text-align: left; font-weight: 800; font-size: 14px; line-height: 1.2;
+  background: rgba(29, 19, 48, .55); color: #fff; border: 2px solid rgba(255, 255, 255, .25); border-radius: 14px; padding: 6px 10px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+#me { grid-area: me; padding: 0 6px; }
+.me-head { display: flex; align-items: center; gap: 6px; color: #fff; font-size: 15px; text-shadow: 0 1px 0 var(--ink); min-height: 30px; position: relative; }
+.me-av { font-size: 22px; }
+.me-head .hb { font-size: 13px; }
+.prompt {
+  flex: 1; margin-left: 4px; font-size: 14px; font-weight: 800; color: var(--ink); text-shadow: none;
+  background: #fff; border: 2px solid var(--ink); border-radius: 14px; padding: 5px 10px; line-height: 1.2;
+  position: relative; min-height: 30px; display: flex; align-items: center; gap: 6px;
+}
+.prompt:empty { visibility: hidden; }
+.prompt .warn { color: #b21d22; }
+.btn.use { font-size: 15px; padding: 5px 12px; border-radius: 12px; background: linear-gradient(180deg, #ffe066, var(--gold)); animation: pulse 1s infinite; }
+.body.mine { --sw: var(--bw); margin-top: 4px; padding: 6px 4px calc(var(--bw) * .2); border-radius: 18px; background: rgba(255, 255, 255, .12); border: 2px solid rgba(255, 255, 255, .2); transition: background .2s; }
+.body.mine.active { background: rgba(255, 255, 255, .2); border-color: rgba(255, 255, 255, .5); }
+.body.mine.target { background: rgba(255, 204, 31, .25); border-color: var(--gold); cursor: pointer; }
+
+#handbar { grid-area: hand; display: flex; align-items: flex-end; justify-content: center; gap: 8px; padding: 8px 6px 8px; }
+#game.land #handbar { align-items: center; }
+#hand { display: flex; gap: 6px; --w: var(--hw); padding-top: calc(var(--hw) * .15); }
+#hand .card { --w: var(--hw); transition: transform .18s cubic-bezier(.3, 1.5, .5, 1), box-shadow .18s, filter .2s; cursor: pointer; }
+#hand:not(.live) .card { filter: brightness(.8) saturate(.7); }
+#hand .card.sel { transform: translateY(-14%) scale(1.06); box-shadow: 0 0 0 4px var(--gold), 0 10px 18px rgba(0, 0, 0, .4); z-index: 3; }
+#hand .card.dsel { transform: translateY(-8%) rotate(-4deg); filter: grayscale(.4) brightness(.9); }
+#hand .card.dsel::after { content: "✖"; position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--cw) * .5); color: #fff; text-shadow: 0 0 6px var(--ink), 0 2px 0 var(--ink); background: rgba(236, 64, 56, .45); border-radius: inherit; }
+#hand .card.hint { animation: glowHint 1s infinite; }
+.hand-acts { display: flex; flex-direction: column; gap: 6px; }
+.btn.act { font-size: 12.5px; padding: 8px 3px; border-radius: 14px; flex-direction: column; gap: 0; white-space: normal; width: 76px; line-height: 1.1; }
+.btn.act.hint { animation: glowHint 1s infinite; }
+
+/* ---------- Efeitos ---------- */
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+.flyer { position: fixed; z-index: 60; transform-origin: top left; pointer-events: none; }
+.flyer > .card { --w: inherit; width: 100%; height: 100%; box-shadow: 0 10px 22px rgba(0, 0, 0, .45); }
+.pt { position: fixed; border-radius: 50%; border: 1.5px solid var(--ink); z-index: 70; }
+.burst { position: fixed; width: 130px; height: 100px; transform: translate(-50%, -50%); z-index: 80; animation: burst 1.2s cubic-bezier(.3, 1.6, .5, 1) forwards; display: grid; place-items: center; }
+.burst.big { width: 190px; height: 146px; }
+.burst svg { position: absolute; inset: 0; width: 100%; height: 100%; animation: spin 1.2s linear; }
+.burst span { position: relative; font-weight: 900; font-size: 19px; color: #fff; letter-spacing: .02em; text-shadow: -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 3px 0 var(--ink); transform: rotate(-8deg); }
+.burst.big span { font-size: 28px; }
+@keyframes burst { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 25% { transform: translate(-50%, -50%) scale(1.1); } 35% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { transform: translate(-50%, -60%) scale(.9); opacity: 0; } }
+@keyframes spin { to { transform: rotate(20deg); } }
+.banner {
+  position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 90;
+  font-size: min(11vw, 56px); font-weight: 900; color: var(--gold); white-space: nowrap;
+  text-shadow: -3px -3px 0 var(--ink), 3px -3px 0 var(--ink), -3px 3px 0 var(--ink), 3px 3px 0 var(--ink), 0 6px 0 var(--ink);
+  animation: bannerIn 1.4s cubic-bezier(.3, 1.6, .5, 1) forwards;
+}
+@keyframes bannerIn { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); } 25% { transform: translate(-50%, -50%) scale(1) rotate(-4deg); } 75% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-4deg); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(.8) rotate(-4deg); } }
+.bigcard { position: fixed; inset: 0; z-index: 85; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(29, 19, 48, .45); animation: fadeIn .2s; }
+.bigcard.out { animation: fadeOut .25s forwards; }
+.bc-card { --w: min(42vw, 26vh, 190px); animation: bigIn .45s cubic-bezier(.3, 1.6, .5, 1); }
+.bc-card .card { --w: min(42vw, 26vh, 190px); box-shadow: 0 0 0 5px #fff, 0 0 40px 10px rgba(255, 204, 31, .7); }
+.bc-t { background: #fff; border: 3px solid var(--ink); border-radius: 16px; padding: 8px 16px; font-size: 18px; font-weight: 700; box-shadow: 0 4px 0 var(--ink); animation: bigIn .45s .1s cubic-bezier(.3, 1.6, .5, 1) both; max-width: 90vw; text-align: center; }
+@keyframes bigIn { from { transform: scale(0) rotate(-20deg); } }
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes fadeOut { to { opacity: 0; } }
+.shake { animation: shake .5s !important; }
+@keyframes shake { 20% { transform: translateX(-6px) rotate(-3deg); } 40% { transform: translateX(6px) rotate(3deg); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+.confetti { position: fixed; top: 0; z-index: 200; pointer-events: none; border-radius: 2px; }
+
+/* ---------- Janelas ---------- */
+#modal-wrap { position: fixed; inset: 0; z-index: 150; background: rgba(29, 19, 48, .6); display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; transition: opacity .2s; }
+#modal-wrap.in { opacity: 1; }
+.modal {
+  background: var(--paper); border: 4px solid var(--ink); border-radius: 24px; padding: 18px; width: min(460px, 100%);
+  max-height: calc(100% - 20px); overflow-y: auto; box-shadow: 0 8px 0 var(--ink); transform: scale(.85); transition: transform .25s cubic-bezier(.3, 1.6, .5, 1);
+}
+#modal-wrap.in .modal { transform: scale(1); }
+.modal h2 { margin: 0 0 10px; font-size: 24px; font-weight: 900; text-align: center; }
+.modal p { font-size: 16px; line-height: 1.4; }
+.modal-btns { display: flex; gap: 10px; margin-top: 14px; }
+.modal-btns .btn { flex: 1; }
+.modal .menu-btns { width: 100%; }
+.lbl { display: block; font-weight: 900; margin: 12px 0 6px; }
+.inp { width: 100%; font-size: 20px; font-weight: 800; padding: 10px 14px; border-radius: 14px; border: 3px solid var(--ink); background: #fff; -webkit-user-select: text; user-select: text; }
+.av-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.av-opt { font-size: 28px; border: 3px solid transparent; border-radius: 14px; background: #fff; padding: 4px 0; }
+.av-opt.on { border-color: var(--ink); background: var(--gold); transform: scale(1.08); }
+.col-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.col-opt { width: 38px; height: 38px; border-radius: 50%; border: 3px solid rgba(0, 0, 0, .2); }
+.col-opt.on { border-color: var(--ink); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--ink); }
+.info { text-align: center; }
+.info-card { display: flex; justify-content: center; --w: 130px; margin-bottom: 8px; }
+.info-card .card { --w: 130px; animation: bigIn .4s cubic-bezier(.3, 1.6, .5, 1); }
+.info-t { font-size: 17px; line-height: 1.45; text-align: left; margin-bottom: 14px; }
+.info-t ul { padding-left: 20px; margin: 6px 0; }
+.loglist { max-height: 55vh; overflow-y: auto; margin-bottom: 12px; }
+.loglist p { margin: 0; padding: 6px 2px; border-bottom: 1px dashed rgba(0, 0, 0, .15); font-size: 15px; }
+.toast { position: fixed; left: 50%; bottom: calc(24% + var(--safe-b)); transform: translateX(-50%); z-index: 160; background: #fff; border: 3px solid var(--ink); border-radius: 16px; padding: 10px 16px; font-weight: 800; box-shadow: 0 4px 0 var(--ink); animation: bigIn .35s cubic-bezier(.3, 1.6, .5, 1); max-width: 90vw; text-align: center; }
+.toast.out { transition: opacity .4s, transform .4s; opacity: 0; transform: translate(-50%, 20px); }
+.end { text-align: center; }
+.end-av { width: 90px; height: 90px; margin: 0 auto 4px; display: grid; place-items: center; font-size: 70px; animation: bigIn .6s cubic-bezier(.3, 1.6, .5, 1); }
+.end-av svg { width: 100%; height: 100%; }
+.end h1 { margin: 0; font-size: 40px; font-weight: 900; color: var(--gold); text-shadow: -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 4px 0 var(--ink); }
+.end.lost h1 { color: #9fd0ff; }
+.end p { margin: 6px 0 10px; }
+.end-body { --sw: 48px; display: flex; justify-content: center; margin: 6px 0 12px; gap: 5px; padding-bottom: 10px; }
+.end-body .slot, .end-body .ph { --sw: 48px; }
+.end-body .card { --w: 48px; }
+.end-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.end-stats span { background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 10px; font-weight: 800; font-size: 14px; }
+.new-medals { margin-top: 14px; background: linear-gradient(180deg, #fff3a8, var(--gold)); border: 3px solid var(--ink); border-radius: 18px; padding: 10px; animation: bigIn .5s .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+.new-medals h3 { margin: 0 0 6px; }
+.nm { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 17px; }
+.nm span { font-size: 30px; }
+.tut { text-align: center; }
+.tut-cards { display: flex; justify-content: center; gap: 6px; --w: 70px; min-height: 100px; margin-bottom: 6px; }
+.tut-cards .card { animation: bigIn .45s cubic-bezier(.3, 1.6, .5, 1) both; }
+.tut-cards .card:nth-child(2) { animation-delay: .08s; } .tut-cards .card:nth-child(3) { animation-delay: .16s; } .tut-cards .card:nth-child(4) { animation-delay: .24s; }
+.tut-big { font-size: 80px; animation: bigIn .5s cubic-bezier(.3, 1.6, .5, 1); }
+.dots-nav { display: flex; gap: 6px; justify-content: center; }
+.dots-nav i { width: 10px; height: 10px; border-radius: 50%; background: #d5cfe0; border: 2px solid var(--ink); }
+.dots-nav i.on { background: var(--gold); }
+
+/* ---------- Horizontal ---------- */
+#game.land #opps { padding-right: 0; }
+#game.land #me { align-self: end; }
+#game.land #handbar { justify-content: center; }
+#game.land .logline { font-size: 13px; }
+@media (orientation: landscape) and (max-height: 520px) {
+  .page { padding-top: 8px; }
+  .center-page { justify-content: flex-start; padding-top: 10px; }
+  .logo { width: min(50vw, 300px); }
+  .deco-cards { display: none; }
+  .menu-top { position: static; margin-bottom: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+</style>
+</head>
+<body>
+<div id="app" class="screen"></div>
+<script>
+/* ===== Motor de regras do Vírus! ===== */
+const COLORS = ['red', 'blue', 'yellow', 'green'];
+const ORDER = ['red', 'blue', 'yellow', 'green', 'multi'];
+
+const ENG = (() => {
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function makeDeck(extras) {
+    extras = extras || {};
+    let uid = 0;
+    const d = [];
+    const add = (t, c, k, n) => { for (let i = 0; i < n; i++) d.push({ id: 'c' + (uid++), t, c: c || null, k: k || null }); };
+    for (const c of COLORS) { add('organ', c, null, 5); add('virus', c, null, 4); add('med', c, null, 4); }
+    add('organ', 'multi', null, 1); add('virus', 'multi', null, 1); add('med', 'multi', null, 4);
+    add('treat', null, 'transplant', 3); add('treat', null, 'thief', 3); add('treat', null, 'contagion', 2);
+    add('treat', null, 'glove', 1); add('treat', null, 'error', 1);
+    if (extras.cthief) for (const c of COLORS) add('treat', c, 'cthief', 1);
+    if (extras.alien) add('treat', null, 'alien', 1);
+    if (extras.ghost) add('treat', null, 'ghost', 2);
+    if (extras.sneeze) add('treat', null, 'sneeze', 1);
+    return shuffle(d);
+  }
+
+  const match = (a, b) => a === 'multi' || b === 'multi' || a === b;
+
+  function slotState(sl) {
+    if (!sl.mods.length) return 'free';
+    if (sl.mods[0].t === 'virus') return 'infected';
+    return sl.mods.length >= 2 ? 'immune' : 'vaccinated';
+  }
+  const healthy = sl => slotState(sl) !== 'infected';
+  const healthyCount = body => body.filter(healthy).length;
+  const isWinner = p => healthyCount(p.body) >= 4;
+  const hasColor = (body, c, exceptOid) => body.some(s => s.organ.c === c && s.organ.id !== exceptOid);
+
+  function findSlot(s, oid) {
+    for (let i = 0; i < s.players.length; i++) {
+      const b = s.players[i].body;
+      const k = b.findIndex(x => x.organ.id === oid);
+      if (k >= 0) return { p: i, k, sl: b[k] };
+    }
+    return null;
+  }
+
+  function newCounters() {
+    return { organ: 0, virus: 0, infect: 0, destroy: 0, cure: 0, vaccinate: 0, immune: 0, steal: 0, transplant: 0,
+      contagion: 0, glove: 0, error: 0, discard: 0, gotInfected: 0, lostOrgans: 0, turns: 0, maxImmune: 0 };
+  }
+
+  function newGame(cfg) {
+    const s = {
+      v: 1,
+      players: cfg.players.map((p, i) => Object.assign({ idx: i, hand: [], body: [], st: newCounters() }, p)),
+      deck: makeDeck(cfg.extras),
+      discard: [],
+      turn: Math.floor(Math.random() * cfg.players.length),
+      turnCount: 1,
+      phase: 'start',
+      winner: null,
+      winKind: null,
+      log: [],
+      t0: Date.now()
+    };
+    for (let r = 0; r < 3; r++) for (const p of s.players) p.hand.push(s.deck.pop());
+    return s;
+  }
+
+  function drawOne(s) {
+    if (!s.deck.length) {
+      if (!s.discard.length) return null;
+      s.deck = shuffle(s.discard);
+      s.discard = [];
+    }
+    return s.deck.pop();
+  }
+  function drawTo3(s, pi) {
+    const p = s.players[pi];
+    const got = [];
+    while (p.hand.length < 3) {
+      const c = drawOne(s);
+      if (!c) break;
+      p.hand.push(c);
+      got.push(c.id);
+    }
+    return got;
+  }
+
+  /* ---------- Validade ---------- */
+  function canVirus(v, sl) {
+    const st = slotState(sl);
+    if (st === 'immune') return false;
+    if (!match(v.c, sl.organ.c)) return false;
+    if (st === 'vaccinated' && !match(v.c, sl.mods[0].c)) return false;
+    return true;
+  }
+  function canMed(m, sl) {
+    const st = slotState(sl);
+    if (st === 'immune') return false;
+    if (!match(m.c, sl.organ.c)) return false;
+    if (st === 'infected' && !match(m.c, sl.mods[0].c)) return false;
+    return true;
+  }
+  function swapOk(s, a, b, allowImmune) {
+    if (a.p === b.p) return false;
+    const A = findSlot(s, a.oid), B = findSlot(s, b.oid);
+    if (!A || !B) return false;
+    if (!allowImmune && (slotState(A.sl) === 'immune' || slotState(B.sl) === 'immune')) return false;
+    if (hasColor(s.players[A.p].body, B.sl.organ.c, A.sl.organ.id)) return false;
+    if (hasColor(s.players[B.p].body, A.sl.organ.c, B.sl.organ.id)) return false;
+    return true;
+  }
+
+  function movesForCard(s, pi, card, firstOnly) {
+    const me = s.players[pi], P = s.players, out = [];
+    const push = t => { out.push({ type: 'play', cardId: card.id, target: t }); return firstOnly; };
+    if (card.t === 'organ') {
+      if (!hasColor(me.body, card.c)) push({});
+    } else if (card.t === 'virus') {
+      for (let j = 0; j < P.length; j++) {
+        if (j === pi) continue;
+        for (const sl of P[j].body) if (canVirus(card, sl) && push({ p: j, oid: sl.organ.id })) return out;
+      }
+    } else if (card.t === 'med') {
+      for (const sl of me.body) if (canMed(card, sl) && push({ p: pi, oid: sl.organ.id })) return out;
+    } else {
+      switch (card.k) {
+        case 'transplant': case 'alien': {
+          const all = [];
+          P.forEach((p, j) => p.body.forEach(sl => all.push({ p: j, oid: sl.organ.id })));
+          for (let x = 0; x < all.length; x++) for (let y = x + 1; y < all.length; y++) {
+            if (swapOk(s, all[x], all[y], card.k === 'alien') && push({ a: all[x], b: all[y] })) return out;
+          }
+          break;
+        }
+        case 'thief':
+          for (let j = 0; j < P.length; j++) {
+            if (j === pi) continue;
+            for (const sl of P[j].body)
+              if (slotState(sl) !== 'immune' && !hasColor(me.body, sl.organ.c) && push({ p: j, oid: sl.organ.id })) return out;
+          }
+          break;
+        case 'cthief':
+          if (hasColor(me.body, card.c)) break;
+          for (let j = 0; j < P.length; j++) {
+            if (j === pi) continue;
+            for (const sl of P[j].body) if (sl.organ.c === card.c && push({ p: j, oid: sl.organ.id })) return out;
+          }
+          break;
+        case 'error':
+          for (let j = 0; j < P.length; j++) if (j !== pi && push({ p: j })) return out;
+          break;
+        case 'ghost':
+          if (s.discard.length) push({});
+          break;
+        default: // contagion, glove, sneeze
+          push({});
+      }
+    }
+    return out;
+  }
+
+  function playMoves(s, pi) {
+    const out = [];
+    for (const c of s.players[pi].hand) out.push(...movesForCard(s, pi, c));
+    return out;
+  }
+  const cardPlayable = (s, pi, c) => movesForCard(s, pi, c, true).length > 0;
+
+  function contagionPlan(s, pi) {
+    const me = s.players[pi];
+    const plan = [];
+    const used = new Set();
+    const others = s.players.map((p, j) => j).filter(j => j !== pi)
+      .sort((a, b) => healthyCount(s.players[b].body) - healthyCount(s.players[a].body));
+    for (const sl of me.body) {
+      if (slotState(sl) !== 'infected') continue;
+      const v = sl.mods[0];
+      let done = false;
+      for (const j of others) {
+        for (const t of s.players[j].body) {
+          if (used.has(t.organ.id) || t.mods.length || !match(v.c, t.organ.c)) continue;
+          plan.push({ from: sl.organ.id, p: j, to: t.organ.id });
+          used.add(t.organ.id);
+          done = true;
+          break;
+        }
+        if (done) break;
+      }
+    }
+    return plan;
+  }
+
+  /* ---------- Aplicar jogada ---------- */
+  function applyEffect(s, pi, mv) {
+    const me = s.players[pi];
+    const ev = [];
+    if (mv.type === 'discard') {
+      const ids = new Set(mv.cardIds);
+      const out = me.hand.filter(c => ids.has(c.id));
+      me.hand = me.hand.filter(c => !ids.has(c.id));
+      s.discard.push(...out);
+      me.st.discard += out.length;
+      ev.push({ e: 'discard', p: pi, n: out.length, cards: out.map(c => c.id) });
+      return ev;
+    }
+    const idx = me.hand.findIndex(c => c.id === mv.cardId);
+    if (idx < 0) throw new Error('carta inexistente');
+    const card = me.hand.splice(idx, 1)[0];
+    const t = mv.target || {};
+    if (card.t === 'organ') {
+      me.body.push({ organ: card, mods: [] });
+      me.st.organ++;
+      ev.push({ e: 'organ', p: pi, oid: card.id, card });
+    } else if (card.t === 'virus') {
+      const F = findSlot(s, t.oid);
+      const st = slotState(F.sl);
+      const victim = s.players[F.p];
+      me.st.virus++;
+      if (st === 'free') {
+        F.sl.mods.push(card);
+        me.st.infect++; victim.st.gotInfected++;
+        ev.push({ e: 'infect', p: pi, tp: F.p, oid: t.oid, card });
+      } else if (st === 'infected') {
+        victim.body.splice(F.k, 1);
+        s.discard.push(F.sl.organ, ...F.sl.mods, card);
+        me.st.destroy++; victim.st.lostOrgans++;
+        ev.push({ e: 'destroy', p: pi, tp: F.p, oid: t.oid, card, organ: F.sl.organ });
+      } else {
+        s.discard.push(F.sl.mods.pop(), card);
+        ev.push({ e: 'neutralize', p: pi, tp: F.p, oid: t.oid, card });
+      }
+    } else if (card.t === 'med') {
+      const F = findSlot(s, t.oid);
+      const st = slotState(F.sl);
+      if (st === 'free') {
+        F.sl.mods.push(card); me.st.vaccinate++;
+        ev.push({ e: 'vaccinate', p: pi, oid: t.oid, card });
+      } else if (st === 'vaccinated') {
+        F.sl.mods.push(card); me.st.immune++;
+        ev.push({ e: 'immune', p: pi, oid: t.oid, card });
+      } else {
+        s.discard.push(F.sl.mods.pop(), card); me.st.cure++;
+        ev.push({ e: 'cure', p: pi, oid: t.oid, card });
+      }
+      me.st.maxImmune = Math.max(me.st.maxImmune, me.body.filter(x => slotState(x) === 'immune').length);
+    } else {
+      if (card.k !== 'ghost') s.discard.push(card);
+      switch (card.k) {
+        case 'transplant': case 'alien': {
+          const A = findSlot(s, t.a.oid), B = findSlot(s, t.b.oid);
+          s.players[A.p].body[A.k] = B.sl;
+          s.players[B.p].body[B.k] = A.sl;
+          me.st.transplant++;
+          ev.push({ e: 'transplant', p: pi, a: t.a, b: t.b, card });
+          break;
+        }
+        case 'thief': case 'cthief': {
+          const F = findSlot(s, t.oid);
+          s.players[F.p].body.splice(F.k, 1);
+          me.body.push(F.sl);
+          me.st.steal++; s.players[F.p].st.lostOrgans++;
+          ev.push({ e: 'steal', p: pi, tp: F.p, oid: t.oid, card });
+          break;
+        }
+        case 'contagion': {
+          const plan = contagionPlan(s, pi);
+          for (const m of plan) {
+            const from = findSlot(s, m.from), to = findSlot(s, m.to);
+            const v = from.sl.mods.pop();
+            to.sl.mods.push(v);
+            s.players[to.p].st.gotInfected++;
+          }
+          me.st.contagion += plan.length;
+          ev.push({ e: 'contagion', p: pi, plan, card });
+          break;
+        }
+        case 'glove': {
+          s.players.forEach((p, j) => { if (j !== pi) { s.discard.push(...p.hand); p.hand = []; } });
+          me.st.glove++;
+          ev.push({ e: 'glove', p: pi, card });
+          break;
+        }
+        case 'error': {
+          const o = s.players[t.p];
+          [me.body, o.body] = [o.body, me.body];
+          me.st.error++;
+          ev.push({ e: 'error', p: pi, tp: t.p, card });
+          break;
+        }
+        case 'ghost': {
+          const top = s.discard.pop();
+          me.hand.push(top);
+          s.discard.push(card);
+          ev.push({ e: 'ghost', p: pi, got: top, card });
+          break;
+        }
+        case 'sneeze': {
+          const n = s.players.length;
+          const hands = s.players.map(p => p.hand);
+          s.players.forEach((p, j) => { p.hand = hands[(j - 1 + n) % n]; });
+          ev.push({ e: 'sneeze', p: pi, card });
+          break;
+        }
+      }
+    }
+    return ev;
+  }
+
+  function checkWinner(s, pi) {
+    if (isWinner(s.players[pi])) return pi;
+    for (let j = 0; j < s.players.length; j++) if (isWinner(s.players[j])) return j;
+    return null;
+  }
+
+  /* Depois da jogada: comprar cartas, ver vencedor, passar a vez */
+  function finishTurn(s, pi, lastEv) {
+    const drawn = drawTo3(s, pi);
+    s.players[pi].st.turns++;
+    const w = checkWinner(s, pi);
+    if (w !== null) {
+      s.winner = w;
+      s.winKind = lastEv && lastEv[0] ? lastEv[0].e : null;
+      return { drawn, winner: w };
+    }
+    s.turn = (pi + 1) % s.players.length;
+    s.turnCount++;
+    s.phase = 'start';
+    if (s.turnCount > 600) {
+      let best = 0;
+      s.players.forEach((p, j) => { if (healthyCount(p.body) > healthyCount(s.players[best].body)) best = j; });
+      s.winner = best; s.winKind = 'timeout';
+    }
+    return { drawn, winner: s.winner };
+  }
+
+  /* Início do turno: quem ficou sem cartas (Luva) perde a vez */
+  function beginTurn(s) {
+    const skipped = [];
+    let guard = s.players.length + 1;
+    while (s.phase === 'start' && guard-- > 0) {
+      const p = s.players[s.turn];
+      if (p.hand.length === 0) {
+        drawTo3(s, s.turn);
+        skipped.push(s.turn);
+        p.st.turns++;
+        s.turn = (s.turn + 1) % s.players.length;
+        s.turnCount++;
+        continue;
+      }
+      drawTo3(s, s.turn);
+      s.phase = 'play';
+    }
+    s.phase = 'play';
+    return skipped;
+  }
+
+  return { COLORS, makeDeck, match, slotState, healthy, healthyCount, isWinner, hasColor, findSlot, newGame,
+    movesForCard, playMoves, cardPlayable, contagionPlan, applyEffect, finishTurn, beginTurn, drawTo3, swapOk, shuffle };
+})();
+
+if (false) module.exports = { ENG, COLORS, ORDER };
+
+/* ===== Inteligência dos adversários ===== */
+const AI = (() => {
+  const E = ENG;
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const VAL = { infected: 3, free: 10, vaccinated: 15, immune: 24 };
+
+  function bodyScore(body) {
+    let s = 0;
+    for (const sl of body) s += VAL[E.slotState(sl)];
+    const h = E.healthyCount(body);
+    if (h >= 4) s += 10000;
+    else if (h === 3) s += 18;
+    return s;
+  }
+
+  function evaluate(s, pi, level) {
+    const me = s.players[pi];
+    let v = bodyScore(me.body);
+    let useful = 0;
+    for (const c of me.hand) if (E.cardPlayable(s, pi, c)) useful++;
+    v += useful * 2.5;
+    const opp = [];
+    s.players.forEach((p, j) => {
+      if (j === pi) return;
+      const h = E.healthyCount(p.body);
+      let o = bodyScore(p.body);
+      if (h >= 3) o += 3 * p.hand.length; // cartas na mão de quem está quase a ganhar são perigosas
+      opp.push(o);
+    });
+    const max = Math.max(...opp), avg = opp.reduce((a, b) => a + b, 0) / opp.length;
+    const wMax = level === 'hard' ? 0.75 : 0.55;
+    v -= wMax * max + (1 - wMax) * avg;
+    return v;
+  }
+
+  function scoreMoves(s, pi, level) {
+    const base = evaluate(s, pi, level);
+    const moves = E.playMoves(s, pi);
+    const noise = level === 'easy' ? 8 : level === 'normal' ? 3 : 0;
+    return moves.map(m => {
+      const c = clone(s);
+      E.applyEffect(c, pi, m);
+      let v;
+      if (E.isWinner(c.players[pi])) v = 100000;
+      else v = evaluate(c, pi, level) - base;
+      v += (Math.random() * 2 - 1) * noise;
+      return { m, v };
+    }).sort((a, b) => b.v - a.v);
+  }
+
+  function discardMove(s, pi, scored) {
+    const hand = s.players[pi].hand;
+    const me = s.players[pi];
+    const useless = hand.filter(c => {
+      if (!E.cardPlayable(s, pi, c)) return true;
+      const best = scored.filter(x => x.m.cardId === c.id);
+      return !best.length || best[0].v <= -1;
+    }).map(c => c.id);
+    if (useless.length) return { type: 'discard', cardIds: useless };
+    // descarta a carta com pior aproveitamento
+    let worst = hand[0].id, wv = Infinity;
+    for (const c of hand) {
+      const b = scored.find(x => x.m.cardId === c.id);
+      const v = b ? b.v : -99;
+      if (v < wv) { wv = v; worst = c.id; }
+    }
+    return { type: 'discard', cardIds: [worst] };
+  }
+
+  function choose(s, pi, level) {
+    level = level || 'normal';
+    const scored = scoreMoves(s, pi, level);
+    if (level === 'easy' && scored.length && Math.random() < 0.45) {
+      return scored[Math.floor(Math.random() * scored.length)].m;
+    }
+    if (scored.length && scored[0].v > 0.5) return scored[0].m;
+    return discardMove(s, pi, scored);
+  }
+
+  return { choose, evaluate, bodyScore, scoreMoves };
+})();
+
+if (false) module.exports = { AI };
+
+/* ===== Arte original em SVG ===== */
+const ART = (() => {
+  const INK = '#1d1330';
+  const PAL = {
+    red:    { m: '#ec4038', d: '#a3161c', l: '#ff9a8f' },
+    blue:   { m: '#2f86e8', d: '#17498f', l: '#9fd0ff' },
+    yellow: { m: '#f7c51c', d: '#b98300', l: '#fff08a' },
+    green:  { m: '#35b84b', d: '#16722a', l: '#aef59f' },
+    multi:  { m: '#b06ad8', d: '#4b2a6b', l: '#ffffff' },
+    purple: { m: '#8b56d8', d: '#4d2596', l: '#d6b8ff' }
+  };
+  const fill = c => `url(#g-${c})`;
+
+  function defs() {
+    let g = '';
+    for (const c of ['red', 'blue', 'yellow', 'green', 'purple']) {
+      const p = PAL[c];
+      g += `<radialGradient id="g-${c}" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="${p.l}"/><stop offset=".45" stop-color="${p.m}"/><stop offset="1" stop-color="${p.d}"/></radialGradient>`;
+    }
+    g += `<linearGradient id="g-multi" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ec4038"/><stop offset=".3" stop-color="#f7c51c"/><stop offset=".55" stop-color="#35b84b"/><stop offset=".8" stop-color="#2f86e8"/><stop offset="1" stop-color="#a24fd6"/></linearGradient>`;
+    g += `<radialGradient id="g-skin" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#ffe4c8"/><stop offset="1" stop-color="#f0a871"/></radialGradient>`;
+    g += `<radialGradient id="g-glass" cx="30%" cy="25%" r="90%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c8e6f5"/></radialGradient>`;
+    g += `<radialGradient id="g-back" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#6b3fc0"/><stop offset="1" stop-color="#2a1260"/></radialGradient>`;
+    g += `<radialGradient id="g-gold" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#fff6b0"/><stop offset=".5" stop-color="#ffcc1f"/><stop offset="1" stop-color="#c47f00"/></radialGradient>`;
+    g += `<pattern id="p-dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.3" fill="rgba(255,255,255,.12)"/></pattern>`;
+    return `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>${g}</defs></svg>`;
+  }
+
+  /* Contorno grosso estilo banda desenhada: desenha as formas a preto por baixo e a cor por cima */
+  const blob = (shapes, f, w = 7) =>
+    `<g fill="${INK}" stroke="${INK}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round">${shapes}</g><g fill="${f}">${shapes}</g>`;
+  const shine = (x, y, rx, ry, rot = -30) =>
+    `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" transform="rotate(${rot} ${x} ${y})" fill="#fff" opacity=".5"/>`;
+
+  function face(x, y, s, mood) {
+    let f = '';
+    const eye = (ex, px = 0.8, py = 1) =>
+      `<ellipse cx="${ex}" cy="-3" rx="5" ry="6" fill="#fff" stroke="${INK}" stroke-width="2"/><circle cx="${ex + px}" cy="${-3 + py}" r="2.8" fill="${INK}"/><circle cx="${ex + px + 1}" cy="${-4 + py}" r="1" fill="#fff"/>`;
+    if (mood === 'sick') {
+      f += `<ellipse cx="-9" cy="-3" rx="5" ry="6" fill="#fff" stroke="${INK}" stroke-width="2"/><ellipse cx="9" cy="-3" rx="5" ry="6" fill="#fff" stroke="${INK}" stroke-width="2"/>`;
+      f += `<circle cx="-9" cy="0" r="2.5" fill="${INK}"/><circle cx="9" cy="0" r="2.5" fill="${INK}"/>`;
+      f += `<path d="M-14.5 -3 L-3.5 -3 M3.5 -3 L14.5 -3" stroke="${INK}" stroke-width="2.4"/><path d="M-14 -3 A5 6 0 0 1 -4 -3Z M4 -3 A5 6 0 0 1 14 -3Z" fill="#7bc47f" stroke="${INK}" stroke-width="1.5"/>`;
+      f += `<path d="M-9 9 q2.2 -3 4.5 0 q2.2 3 4.5 0 q2.2 -3 4.5 0 q2.2 3 4.5 0" stroke="${INK}" stroke-width="2.3" fill="none" stroke-linecap="round"/>`;
+      f += `<path d="M16 -14 q4 6 0 8 q-4 -2 0 -8z" fill="#6fd0ff" stroke="${INK}" stroke-width="1.2"/>`;
+      f += `<ellipse cx="-14" cy="5" rx="3.5" ry="2" fill="#8fdc6a" opacity=".8"/><ellipse cx="14" cy="5" rx="3.5" ry="2" fill="#8fdc6a" opacity=".8"/>`;
+    } else if (mood === 'immune') {
+      f += `<path d="M-16 -8 h13 a1 1 0 0 1 1 1 v4 a5 5 0 0 1 -5 5 h-4 a5 5 0 0 1 -5 -5 z M16 -8 h-13 a1 1 0 0 0 -1 1 v4 a5 5 0 0 0 5 5 h4 a5 5 0 0 0 5 -5 z M-3 -6 h6" fill="${INK}" stroke="${INK}" stroke-width="2"/>`;
+      f += `<path d="M-13 -6 l4 0 M5 -6 l4 0" stroke="#fff" stroke-width="1.6" opacity=".8"/>`;
+      f += `<path d="M-8 6 Q1 14 9 5" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+      f += `<ellipse cx="-14" cy="5" rx="3.5" ry="2" fill="#ff7b9c" opacity=".6"/><ellipse cx="14" cy="5" rx="3.5" ry="2" fill="#ff7b9c" opacity=".6"/>`;
+    } else if (mood === 'angry') {
+      f += eye(-9, 1.2, 1) + eye(9, -1.2, 1);
+      f += `<path d="M-16 -12 L-4 -7 M16 -12 L4 -7" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"/>`;
+      f += `<path d="M-12 5 Q0 20 12 5 Z" fill="#4a0f22" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+      f += `<path d="M-10 6 L-7.5 10 L-5 6.8 L-2.5 10.5 L0 7 L2.5 10.5 L5 6.8 L7.5 10 L10 6 Z" fill="#fff" stroke="${INK}" stroke-width="1"/>`;
+    } else {
+      f += eye(-9) + eye(9);
+      f += `<path d="M-8 5 Q0 16 8 5 Z" fill="#7a1f2b" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/><path d="M-3.5 10.5 Q0 8 3.5 10.5 Q0 12.5 -3.5 10.5Z" fill="#ff7b8c"/>`;
+      f += `<ellipse cx="-14.5" cy="5" rx="3.5" ry="2" fill="#ff7b9c" opacity=".7"/><ellipse cx="14.5" cy="5" rx="3.5" ry="2" fill="#ff7b9c" opacity=".7"/>`;
+      if (mood === 'vax') f += `<g transform="translate(13 -12) rotate(-25)"><rect x="-6" y="-2.8" width="12" height="5.6" rx="2.5" fill="#ffd9a8" stroke="${INK}" stroke-width="1.2"/><rect x="-2" y="-2.8" width="4" height="5.6" fill="#f3b77a"/></g>`;
+    }
+    return `<g transform="translate(${x} ${y}) scale(${s})">${f}</g>`;
+  }
+
+  /* ---------- Órgãos ---------- */
+  function heart(c, mood) {
+    const p = PAL[c];
+    let s = `<path d="M43 30 C40 14 50 6 62 9 C68 11 68 19 62 19 C56 18 55 22 55 30Z" fill="${p.d}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`;
+    s += `<path d="M33 30 L30 14 L38 13 L40 28Z" fill="#6d8cff" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`;
+    s += `<path d="M50 88 C20 70 10 52 16 36 C21 21 38 18 47 29 L50 33 L53 29 C62 18 79 21 84 36 C90 52 80 70 50 88Z" fill="${fill(c)}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
+    s += `<path d="M63 72 C72 64 79 55 80 44" stroke="${p.d}" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/>`;
+    s += shine(30, 40, 5, 10);
+    return s + face(50, 55, 0.95, mood);
+  }
+  function brain(c, mood) {
+    const p = PAL[c];
+    let s = `<path d="M45 72 L44 88 L56 88 L55 72Z" fill="${p.d}" stroke="${INK}" stroke-width="3"/>`;
+    s += `<path d="M20 56 C10 50 12 33 25 29 C27 16 42 12 50 19 C58 12 73 16 75 29 C88 33 90 50 80 56 C82 69 67 77 57 72 C53 79 40 79 37 72 C26 77 15 69 20 56Z" fill="${fill(c)}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
+    s += `<g stroke="${p.d}" stroke-width="2.6" fill="none" stroke-linecap="round"><path d="M50 20 C46 28 54 32 50 40"/><path d="M27 38 C33 33 38 41 32 45"/><path d="M73 38 C67 33 62 41 68 45"/><path d="M36 24 C40 28 36 32 40 34"/><path d="M64 24 C60 28 64 32 60 34"/><path d="M22 58 C26 55 28 60 25 63"/><path d="M78 58 C74 55 72 60 75 63"/></g>`;
+    s += shine(32, 30, 5, 8);
+    return s + face(50, 56, 0.9, mood);
+  }
+  function bone(c, mood) {
+    const shapes = `<rect x="24" y="42" width="52" height="17" rx="6"/><circle cx="25" cy="40" r="11"/><circle cx="25" cy="60" r="11"/><circle cx="75" cy="40" r="11"/><circle cx="75" cy="60" r="11"/>`;
+    let s = `<g transform="rotate(-32 50 50)">${blob(shapes, fill(c), 7)}<ellipse cx="22" cy="36" rx="4" ry="6" fill="#fff" opacity=".55"/></g>`;
+    return s + face(50, 51, 0.8, mood);
+  }
+  function stomach(c, mood) {
+    const p = PAL[c];
+    let s = `<path d="M26 64 C16 68 14 80 22 88" stroke="${INK}" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M26 64 C16 68 14 80 22 88" stroke="${p.d}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+    s += `<path d="M38 10 L52 10 L52 26 C72 20 88 34 86 55 C84 78 62 90 42 84 C26 80 20 66 30 60 C38 55 46 60 50 52 C54 44 42 40 38 30 Z" fill="${fill(c)}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
+    s += `<path d="M58 34 C70 36 78 46 78 58" stroke="#fff" stroke-width="3" fill="none" opacity=".45" stroke-linecap="round"/>`;
+    return s + face(63, 60, 0.9, mood);
+  }
+  function multiOrgan(mood) {
+    let s = `<path d="M30 92 L30 66 C30 50 38 44 50 44 C62 44 70 50 70 66 L70 92Z" fill="${fill('multi')}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
+    s += `<path d="M30 60 L16 72 M70 60 L84 72" stroke="${INK}" stroke-width="9" stroke-linecap="round"/><path d="M30 60 L16 72 M70 60 L84 72" stroke="#f7c51c" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<circle cx="50" cy="28" r="20" fill="${fill('multi')}" stroke="${INK}" stroke-width="3.5"/>`;
+    s += `<g transform="translate(40 58) scale(.28)">${heartMini('#ec4038')}</g><g transform="translate(50 70) scale(.26)">${heartMini('#35b84b')}</g>`;
+    s += shine(40, 18, 4, 6);
+    s += `<path d="M84 14 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z M14 30 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z" fill="#fff" stroke="${INK}" stroke-width="1"/>`;
+    return s + face(50, 30, 0.72, mood);
+  }
+  const heartMini = col => `<path d="M20 36 C6 28 0 18 4 10 C8 2 18 2 20 10 C22 2 32 2 36 10 C40 18 34 28 20 36Z" fill="${col}" stroke="${INK}" stroke-width="5"/>`;
+
+  function organ(c, mood) {
+    if (c === 'red') return heart(c, mood);
+    if (c === 'blue') return brain(c, mood);
+    if (c === 'yellow') return bone(c, mood);
+    if (c === 'green') return stomach(c, mood);
+    return multiOrgan(mood);
+  }
+
+  /* ---------- Vírus ---------- */
+  function virusBody(cx, cy, r, c, n = 10) {
+    let s = '';
+    const f = fill(c);
+    const knobs = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + 0.2;
+      const x1 = cx + Math.cos(a) * r * 0.9, y1 = cy + Math.sin(a) * r * 0.9;
+      const x2 = cx + Math.cos(a) * r * 1.38, y2 = cy + Math.sin(a) * r * 1.38;
+      s += `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} L${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${INK}" stroke-width="${(r * 0.22).toFixed(1)}" stroke-linecap="round"/>`;
+      knobs.push(`<circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="${(r * 0.17).toFixed(1)}" fill="${f}" stroke="${INK}" stroke-width="${(r * 0.1).toFixed(1)}"/>`);
+    }
+    s += knobs.join('');
+    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${f}" stroke="${INK}" stroke-width="${(r * 0.12).toFixed(1)}"/>`;
+    s += `<circle cx="${cx - r * 0.5}" cy="${cy + r * 0.45}" r="${r * 0.14}" fill="#000" opacity=".15"/><circle cx="${cx + r * 0.55}" cy="${cy + r * 0.35}" r="${r * 0.1}" fill="#000" opacity=".15"/><circle cx="${cx + r * 0.3}" cy="${cy - r * 0.6}" r="${r * 0.09}" fill="#000" opacity=".15"/>`;
+    s += shine(cx - r * 0.45, cy - r * 0.45, r * 0.16, r * 0.26);
+    return s;
+  }
+  function virus(c) {
+    return virusBody(50, 52, 27, c) + face(50, 54, 1.05, 'angry');
+  }
+
+  /* ---------- Remédios ---------- */
+  function med(c) {
+    const p = PAL[c];
+    let s = `<rect x="37" y="8" width="26" height="14" rx="4" fill="${c === 'multi' ? fill('multi') : p.d}" stroke="${INK}" stroke-width="3"/>`;
+    s += `<rect x="41" y="20" width="18" height="10" fill="url(#g-glass)" stroke="${INK}" stroke-width="3"/>`;
+    s += `<path d="M34 30 L66 30 C74 30 79 36 79 44 L79 82 C79 88 74 92 68 92 L32 92 C26 92 21 88 21 82 L21 44 C21 36 26 30 34 30Z" fill="url(#g-glass)" stroke="${INK}" stroke-width="3.5"/>`;
+    s += `<path d="M23 56 Q37 50 50 56 T77 56 L77 82 C77 87 73 90 68 90 L32 90 C27 90 23 87 23 82Z" fill="${fill(c)}"/>`;
+    s += `<circle cx="32" cy="66" r="3" fill="#fff" opacity=".5"/><circle cx="66" cy="76" r="2.2" fill="#fff" opacity=".5"/><circle cx="58" cy="64" r="1.6" fill="#fff" opacity=".5"/>`;
+    s += `<rect x="31" y="36" width="38" height="18" rx="4" fill="#fff" stroke="${INK}" stroke-width="2.5"/>`;
+    s += `<path d="M46 38.5 h8 v5 h5 v6 h-5 v2 h-8 v-2 h-5 v-6 h5z" fill="${c === 'multi' ? fill('multi') : p.m}" stroke="${INK}" stroke-width="1.4" transform="translate(0 -1)"/>`;
+    s += `<rect x="26" y="34" width="4" height="46" rx="2" fill="#fff" opacity=".6"/>`;
+    s += face(50, 75, 0.62, 'happy');
+    return s;
+  }
+
+  /* ---------- Tratamentos ---------- */
+  function arrowSwap() {
+    return `<g fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"><path d="M14 30 Q24 12 44 12"/><path d="M86 70 Q76 88 56 88"/></g>
+      <g fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M14 30 Q24 12 44 12"/><path d="M86 70 Q76 88 56 88"/></g>
+      <path d="M42 4 L54 12 L42 20Z M58 80 L46 88 L58 96Z" fill="#fff" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  }
+  function cooler(x, y, sc) {
+    return `<g transform="translate(${x} ${y}) scale(${sc})">
+      <rect x="-32" y="-10" width="64" height="44" rx="8" fill="#f4f7fb" stroke="${INK}" stroke-width="3.5"/>
+      <rect x="-34" y="-22" width="68" height="14" rx="5" fill="#5bc0eb" stroke="${INK}" stroke-width="3.5" transform="rotate(-6)"/>
+      <rect x="-5" y="0" width="10" height="26" rx="1" fill="#ec4038" stroke="${INK}" stroke-width="1.5"/><rect x="-13" y="8" width="26" height="10" rx="1" fill="#ec4038" stroke="${INK}" stroke-width="1.5"/>
+      <rect x="-28" y="-6" width="5" height="34" rx="2" fill="#fff"/></g>`;
+  }
+  function transplant() {
+    return arrowSwap() + `<g transform="translate(54 16) scale(.38) rotate(12)">${heart('red', 'happy')}</g>` + cooler(50, 58, 0.72);
+  }
+  function bandit(maskCol, sackCol) {
+    let s = `<path d="M66 70 Q58 92 76 94 Q94 92 86 70 Q76 64 66 70Z" fill="${sackCol || '#d7ae72'}" stroke="${INK}" stroke-width="3"/><path d="M68 70 Q76 76 84 70" stroke="${INK}" stroke-width="3" fill="none"/>`;
+    s += `<text x="76" y="89" font-size="14" text-anchor="middle" font-weight="900" fill="${INK}" font-family="Arial">$</text>`;
+    s += `<circle cx="46" cy="54" r="27" fill="url(#g-skin)" stroke="${INK}" stroke-width="3.5"/>`;
+    s += `<path d="M19 48 C19 22 73 22 73 48 Z" fill="#3b3b58" stroke="${INK}" stroke-width="3.5"/><path d="M26 36 L66 36 M22 43 L70 43" stroke="#e8e8f5" stroke-width="3"/><circle cx="46" cy="22" r="6" fill="#e8e8f5" stroke="${INK}" stroke-width="3"/>`;
+    s += `<rect x="16" y="47" width="60" height="14" rx="7" fill="${maskCol || INK}" stroke="${INK}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="36" cy="54" rx="6" ry="4.5" fill="#fff"/><ellipse cx="56" cy="54" rx="6" ry="4.5" fill="#fff"/><circle cx="37.5" cy="54" r="2.6" fill="${INK}"/><circle cx="57.5" cy="54" r="2.6" fill="${INK}"/>`;
+    s += `<path d="M34 67 Q46 78 58 67" stroke="${INK}" stroke-width="3" fill="#fff" stroke-linejoin="round"/><rect x="47" y="67" width="5" height="5" fill="#ffcc1f" stroke="${INK}" stroke-width="1"/>`;
+    return s;
+  }
+  function thief() { return bandit(null, null) + `<g transform="translate(64 60) scale(.3)">${heartMini('#ec4038')}</g>`; }
+  function cthief(c) {
+    const p = PAL[c];
+    return bandit(p.m, p.l) + `<g transform="translate(66 72) scale(.2)">${organ(c, 'happy')}</g>`;
+  }
+  function contagion() {
+    let s = `<path d="M26 72 Q34 30 72 30" stroke="${INK}" stroke-width="3" stroke-dasharray="4 6" fill="none" stroke-linecap="round"/><path d="M30 76 Q60 80 78 64" stroke="${INK}" stroke-width="3" stroke-dasharray="4 6" fill="none" stroke-linecap="round"/>`;
+    s += virusBody(26, 74, 14, 'green', 8) + face(26, 75, 0.55, 'angry');
+    s += virusBody(74, 28, 11, 'red', 8) + face(74, 29, 0.45, 'angry');
+    s += virusBody(80, 64, 8, 'blue', 7) + face(80, 65, 0.32, 'angry');
+    s += virusBody(48, 40, 6, 'yellow', 6);
+    return s;
+  }
+  function glove() {
+    const shapes = `<rect x="30" y="42" width="42" height="36" rx="13"/><rect x="30" y="20" width="10" height="34" rx="5"/><rect x="41" y="12" width="10" height="40" rx="5"/><rect x="52" y="14" width="10" height="38" rx="5"/><rect x="63" y="22" width="9" height="32" rx="4.5"/><rect x="14" y="44" width="10" height="30" rx="5" transform="rotate(-38 19 59)"/>`;
+    let s = blob(shapes, '#9fdcff', 7);
+    s += `<rect x="31" y="74" width="40" height="16" rx="5" fill="#d8f2ff" stroke="${INK}" stroke-width="3.5"/><path d="M36 82 h30" stroke="#8cc8e8" stroke-width="2"/>`;
+    s += `<ellipse cx="36" cy="30" rx="2.5" ry="7" fill="#fff" opacity=".7"/><ellipse cx="46" cy="24" rx="2.5" ry="8" fill="#fff" opacity=".7"/>`;
+    s += `<g stroke="${INK}" stroke-width="3" stroke-linecap="round"><path d="M80 18 L88 12"/><path d="M82 30 L92 30"/><path d="M78 8 L80 2"/></g>`;
+    return s;
+  }
+  function error() {
+    let s = `<path d="M24 92 Q26 72 50 72 Q74 72 76 92Z" fill="#f4f7fb" stroke="${INK}" stroke-width="3"/><path d="M42 72 L50 84 L58 72" fill="#5bc0eb" stroke="${INK}" stroke-width="2.5"/>`;
+    s += `<circle cx="50" cy="50" r="24" fill="url(#g-skin)" stroke="${INK}" stroke-width="3.5"/>`;
+    s += `<path d="M27 42 C28 22 72 22 73 42 C66 32 56 30 50 34 C44 30 34 32 27 42Z" fill="#8a5a2b" stroke="${INK}" stroke-width="3"/>`;
+    s += `<path d="M26 34 Q50 24 74 34" stroke="${INK}" stroke-width="3" fill="none"/><circle cx="50" cy="24" r="8" fill="#e4eef6" stroke="${INK}" stroke-width="3"/><circle cx="48" cy="22" r="2.5" fill="#fff"/>`;
+    const spiral = cx => `<path d="M${cx} 50 m0 0 a1.5 1.5 0 0 1 3 0 a3 3 0 0 1 -6 0 a4.5 4.5 0 0 1 9 0 a6 6 0 0 1 -12 0" stroke="${INK}" stroke-width="1.8" fill="#fff"/>`;
+    s += spiral(39) + spiral(58);
+    s += `<path d="M40 64 q3 -3 5 0 q3 3 5 0 q3 -3 5 0" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    s += `<text x="14" y="30" font-size="22" font-weight="900" fill="#ffcc1f" stroke="${INK}" stroke-width="1.5" font-family="Arial">?</text><text x="78" y="26" font-size="18" font-weight="900" fill="#ffcc1f" stroke="${INK}" stroke-width="1.5" font-family="Arial">?</text><text x="84" y="58" font-size="14" font-weight="900" fill="#ffcc1f" stroke="${INK}" stroke-width="1.2" font-family="Arial">!</text>`;
+    return s;
+  }
+  function alien() {
+    let s = `<path d="M40 22 L32 6 M60 22 L68 6" stroke="${INK}" stroke-width="3"/><circle cx="32" cy="6" r="4" fill="#ffcc1f" stroke="${INK}" stroke-width="2"/><circle cx="68" cy="6" r="4" fill="#ffcc1f" stroke="${INK}" stroke-width="2"/>`;
+    s += `<path d="M50 14 C74 14 80 34 72 52 C66 64 58 70 50 70 C42 70 34 64 28 52 C20 34 26 14 50 14Z" fill="#8ee06b" stroke="${INK}" stroke-width="3.5"/>`;
+    s += `<ellipse cx="39" cy="42" rx="8" ry="11" transform="rotate(25 39 42)" fill="${INK}"/><ellipse cx="61" cy="42" rx="8" ry="11" transform="rotate(-25 61 42)" fill="${INK}"/><circle cx="37" cy="38" r="2.5" fill="#fff"/><circle cx="59" cy="38" r="2.5" fill="#fff"/>`;
+    s += `<path d="M44 58 Q50 63 56 58" stroke="${INK}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+    s += cooler(50, 84, 0.42);
+    return s;
+  }
+  function ghost() {
+    let s = `<rect x="58" y="44" width="22" height="30" rx="3" fill="#fff" stroke="${INK}" stroke-width="3" transform="rotate(18 69 59)"/><rect x="62" y="48" width="14" height="22" rx="2" fill="url(#g-back)" transform="rotate(18 69 59)"/>`;
+    s += `<path d="M24 84 L24 42 Q24 14 50 14 Q76 14 76 42 L76 84 Q70 76 63 84 Q57 92 50 84 Q43 76 37 84 Q30 92 24 84Z" fill="#fbfbff" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round" opacity=".96"/>`;
+    s += `<ellipse cx="41" cy="42" rx="5" ry="7" fill="${INK}"/><ellipse cx="59" cy="42" rx="5" ry="7" fill="${INK}"/><circle cx="42.5" cy="39.5" r="1.8" fill="#fff"/><circle cx="60.5" cy="39.5" r="1.8" fill="#fff"/>`;
+    s += `<ellipse cx="50" cy="58" rx="6" ry="7" fill="#4a0f22" stroke="${INK}" stroke-width="2"/>`;
+    s += `<ellipse cx="33" cy="52" rx="4" ry="2.2" fill="#ff9ab3" opacity=".7"/><ellipse cx="67" cy="52" rx="4" ry="2.2" fill="#ff9ab3" opacity=".7"/>`;
+    s += `<path d="M76 58 Q86 54 84 64" stroke="${INK}" stroke-width="3" fill="#fbfbff"/>`;
+    return s;
+  }
+  function sneeze() {
+    let s = `<circle cx="40" cy="56" r="26" fill="url(#g-skin)" stroke="${INK}" stroke-width="3.5"/>`;
+    s += `<path d="M18 44 C20 24 58 22 64 40 C54 34 40 36 30 44Z" fill="#e06a2c" stroke="${INK}" stroke-width="3"/>`;
+    s += `<path d="M26 50 q5 -4 10 0 M44 50 q5 -4 10 0" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+    s += `<ellipse cx="44" cy="60" rx="9" ry="7" fill="#ff6a6a" stroke="${INK}" stroke-width="2.5"/><ellipse cx="41" cy="58" rx="2.5" ry="1.8" fill="#fff" opacity=".7"/>`;
+    s += `<ellipse cx="40" cy="73" rx="6" ry="5" fill="#4a0f22" stroke="${INK}" stroke-width="2"/>`;
+    s += `<g fill="#8fe0ff" stroke="${INK}" stroke-width="1.5"><circle cx="66" cy="66" r="3.5"/><circle cx="76" cy="60" r="2.5"/><circle cx="74" cy="74" r="3"/><circle cx="86" cy="68" r="2"/><circle cx="84" cy="80" r="2.6"/></g>`;
+    s += `<g transform="translate(-5 2) rotate(-10 70 24)"><path d="M48 14 L92 12 L88 36 L50 34Z" fill="#fff" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><text x="69" y="29.5" font-size="12" font-weight="900" text-anchor="middle" fill="#ec4038" font-family="Arial Black,Arial">ATCHIM!</text></g>`;
+    return s;
+  }
+
+  const rayCache = {};
+  function rays(tint) {
+    if (rayCache[tint]) return rayCache[tint];
+    let d = '';
+    const n = 14;
+    for (let i = 0; i < n; i++) {
+      const a1 = (i / n) * Math.PI * 2, a2 = ((i + 0.5) / n) * Math.PI * 2;
+      d += `M50 52 L${(50 + Math.cos(a1) * 90).toFixed(1)} ${(52 + Math.sin(a1) * 90).toFixed(1)} L${(50 + Math.cos(a2) * 90).toFixed(1)} ${(52 + Math.sin(a2) * 90).toFixed(1)}Z`;
+    }
+    return (rayCache[tint] = `<path d="${d}" fill="${tint}" opacity=".32"/><circle cx="50" cy="52" r="30" fill="#fff" opacity=".35"/>`);
+  }
+
+  function back() {
+    let s = `<rect x="0" y="0" width="100" height="140" fill="url(#g-back)"/><rect x="0" y="0" width="100" height="140" fill="url(#p-dots)"/>`;
+    s += `<g transform="translate(0 16)">${virusBody(50, 52, 22, 'green', 10)}${face(50, 54, 0.85, 'angry')}</g>`;
+    s += `<text x="50" y="122" font-size="22" font-weight="900" text-anchor="middle" fill="#ffcc1f" stroke="${INK}" stroke-width="2" paint-order="stroke" font-family="Arial Black,Arial" transform="rotate(-6 50 118)">VÍRUS!</text>`;
+    return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid slice">${s}</svg>`;
+  }
+
+  function art(card, mood) {
+    let s;
+    if (card.t === 'organ') s = organ(card.c, mood || 'happy');
+    else if (card.t === 'virus') s = virus(card.c);
+    else if (card.t === 'med') s = med(card.c);
+    else s = ({ transplant, thief, contagion, glove, error, alien, ghost, sneeze })[card.k]?.() || cthief(card.c);
+    const tint = card.t === 'treat' ? '#c9a6ff' : card.c === 'multi' ? '#ffd36b' : PAL[card.c].l;
+    const sc = card.t === 'organ' ? 1.1 : card.t === 'virus' ? 1.06 : 1;
+    return `<svg viewBox="0 0 100 100" style="overflow:visible">${rays(tint)}<g transform="translate(50 52) scale(${sc}) translate(-50 -52)">${s}</g></svg>`;
+  }
+
+  /* ---------- Avatares dos médicos adversários ---------- */
+  const BOTS = [
+    { name: 'Dr. Atchim',     skin: '#ffd8b5', hair: '#6b3b1f', bg: '#ffb74a', acc: 'mirror', style: 'spiky' },
+    { name: 'Dra. Febre',     skin: '#f2b68c', hair: '#d6392e', bg: '#ff8fb1', acc: 'glasses', style: 'bun' },
+    { name: 'Enf. Tosse',     skin: '#8d5a3b', hair: '#1f1a2e', bg: '#7fd6c2', acc: 'cap', style: 'short' },
+    { name: 'Prof. Ranhoso',  skin: '#ffe0c4', hair: '#e8e8e8', bg: '#9bb7ff', acc: 'glasses', style: 'bald' },
+    { name: 'Dra. Borbulha',  skin: '#c98b62', hair: '#2b1b12', bg: '#c6a6ff', acc: 'mask', style: 'curly' },
+    { name: 'Dr. Comichão',   skin: '#ffcfa0', hair: '#f2b01e', bg: '#a8e46a', acc: 'mirror', style: 'short' },
+    { name: 'Dra. Espirro',   skin: '#6e452c', hair: '#101010', bg: '#ffd65c', acc: 'cap', style: 'bun' }
+  ];
+  function botFace(i) {
+    const b = BOTS[i % BOTS.length];
+    let s = `<circle cx="30" cy="30" r="29" fill="${b.bg}" stroke="${INK}" stroke-width="2.5"/>`;
+    s += `<path d="M10 58 Q12 44 30 44 Q48 44 50 58Z" fill="#fff" stroke="${INK}" stroke-width="2"/><path d="M24 44 L30 52 L36 44" fill="#5bc0eb" stroke="${INK}" stroke-width="1.5"/>`;
+    s += `<path d="M18 50 Q14 56 20 58 M42 50 Q46 56 40 58" stroke="#555" stroke-width="2" fill="none"/>`;
+    if (b.style === 'curly') s += `<g fill="${b.hair}" stroke="${INK}" stroke-width="1.5"><circle cx="16" cy="24" r="7"/><circle cx="44" cy="24" r="7"/><circle cx="18" cy="36" r="6"/><circle cx="42" cy="36" r="6"/></g>`;
+    if (b.style === 'bun') s += `<circle cx="30" cy="8" r="6" fill="${b.hair}" stroke="${INK}" stroke-width="1.8"/>`;
+    s += `<ellipse cx="30" cy="29" rx="14" ry="16" fill="${b.skin}" stroke="${INK}" stroke-width="2.2"/>`;
+    if (b.style === 'spiky') s += `<path d="M15 24 L17 12 L22 18 L26 9 L30 17 L35 9 L38 18 L43 12 L45 24 Q30 16 15 24Z" fill="${b.hair}" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>`;
+    else if (b.style === 'short' || b.style === 'bun' || b.style === 'curly') s += `<path d="M16 26 C15 12 45 12 44 26 C38 19 30 18 24 21 C21 22 18 24 16 26Z" fill="${b.hair}" stroke="${INK}" stroke-width="1.8"/>`;
+    else s += `<path d="M16 28 Q14 22 18 20 M44 28 Q46 22 42 20" stroke="${b.hair}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    s += `<circle cx="24.5" cy="29" r="2.2" fill="${INK}"/><circle cx="35.5" cy="29" r="2.2" fill="${INK}"/><circle cx="25.2" cy="28.2" r=".7" fill="#fff"/><circle cx="36.2" cy="28.2" r=".7" fill="#fff"/>`;
+    s += `<ellipse cx="20" cy="34" rx="2.5" ry="1.4" fill="#ff7b9c" opacity=".6"/><ellipse cx="40" cy="34" rx="2.5" ry="1.4" fill="#ff7b9c" opacity=".6"/>`;
+    if (b.acc === 'mask') s += `<path d="M19 32 Q30 30 41 32 L40 40 Q30 44 20 40Z" fill="#9fdcff" stroke="${INK}" stroke-width="1.6"/><path d="M19 33 L15 30 M41 33 L45 30" stroke="${INK}" stroke-width="1"/>`;
+    else s += `<path d="M25 37 Q30 41 35 37" stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`;
+    if (b.acc === 'glasses') s += `<g fill="rgba(255,255,255,.35)" stroke="${INK}" stroke-width="1.6"><circle cx="24.5" cy="29" r="4.5"/><circle cx="35.5" cy="29" r="4.5"/></g><path d="M29 29 h2" stroke="${INK}" stroke-width="1.6"/>`;
+    if (b.acc === 'mirror') s += `<path d="M17 18 Q30 11 43 18" stroke="${INK}" stroke-width="2" fill="none"/><circle cx="30" cy="13" r="5" fill="#e4eef6" stroke="${INK}" stroke-width="1.8"/><circle cx="29" cy="12" r="1.5" fill="#fff"/>`;
+    if (b.acc === 'cap') s += `<path d="M16 20 C16 8 44 8 44 20 Z" fill="#7fd6c2" stroke="${INK}" stroke-width="1.8"/><path d="M28 12 h4 M30 10 v4" stroke="#ec4038" stroke-width="1.8"/>`;
+    return `<svg viewBox="0 0 60 60">${s}</svg>`;
+  }
+
+  function logo() {
+    let s = `<g transform="translate(0 0)">`;
+    s += `<text x="160" y="92" font-size="92" font-weight="900" text-anchor="middle" fill="#ffcc1f" stroke="${INK}" stroke-width="10" paint-order="stroke" stroke-linejoin="round" font-family="'Arial Black','Arial Rounded MT Bold',Arial" transform="rotate(-4 160 60)">VÍRUS!</text>`;
+    s += `</g>`;
+    s += `<g transform="translate(262 22)">${virusBody(0, 0, 13, 'green', 8)}${face(0, 1, 0.5, 'angry')}</g>`;
+    return `<svg viewBox="0 0 320 110" class="logo-svg">${s}</svg>`;
+  }
+
+  function icon(kind) {
+    if (kind === 'virus') return `<svg viewBox="0 0 100 100">${virusBody(50, 52, 27, 'green')}${face(50, 54, 1.05, 'angry')}</svg>`;
+    return '';
+  }
+
+  return { PAL, INK, defs, art, back, botFace, BOTS, logo, organ, virusBody, face, icon };
+})();
+
+/* ===== Interface ===== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const pl = (n, s, p) => `${n} ${n === 1 ? s : p}`;
+
+/* ---------- Textos ---------- */
+const TXT = {
+  organ: { red: 'Coração', blue: 'Cérebro', yellow: 'Osso', green: 'Estômago', multi: 'Órgão Multicolor' },
+  adj: { red: 'vermelho', blue: 'azul', yellow: 'amarelo', green: 'verde', multi: 'multicolor' },
+  treat: { transplant: 'Transplante', thief: 'Ladrão de Órgãos', contagion: 'Contágio', glove: 'Luva de Látex', error: 'Erro Médico',
+    alien: 'Transplante Alienígena', ghost: 'Fantasma', sneeze: 'Atchim!' },
+  short: { transplant: 'Transplante', thief: 'Ladrão', contagion: 'Contágio', glove: 'Luva', error: 'Erro Médico',
+    alien: 'Alienígena', ghost: 'Fantasma', sneeze: 'Atchim!', cthief: 'Ladrão' }
+};
+function cardName(c) {
+  if (c.t === 'organ') return TXT.organ[c.c];
+  if (c.t === 'virus') return 'Vírus ' + TXT.adj[c.c];
+  if (c.t === 'med') return 'Remédio ' + TXT.adj[c.c];
+  if (c.k === 'cthief') return 'Ladrão ' + cap(TXT.adj[c.c]);
+  return TXT.treat[c.k];
+}
+function shortName(c) {
+  if (c.t === 'organ') return c.c === 'multi' ? 'Multicolor' : TXT.organ[c.c];
+  if (c.t === 'virus') return 'Vírus';
+  if (c.t === 'med') return 'Remédio';
+  return TXT.short[c.k];
+}
+function cardHelp(c) {
+  const cor = c.c === 'multi' ? 'de qualquer cor' : TXT.adj[c.c];
+  if (c.t === 'organ') return c.c === 'multi'
+    ? 'Conta como um órgão diferente de todos os outros, por isso ajuda-te a completar o corpo. Aceita remédios de qualquer cor, mas cuidado: também pode ser atacado por vírus de qualquer cor!'
+    : `Coloca este órgão no teu corpo. Para ganhar precisas de 4 órgãos diferentes e saudáveis. Não podes ter dois órgãos iguais.`;
+  if (c.t === 'virus') return `Põe este vírus num órgão ${cor} de um adversário.<ul><li>Órgão saudável: fica <b>doente</b>.</li><li>Órgão doente: é <b>destruído</b>!</li><li>Órgão com 1 remédio: o vírus e o remédio desaparecem.</li></ul>Não funciona em órgãos imunes.` +
+    (c.c === 'multi' ? ' Este vírus serve para qualquer cor, mas qualquer remédio o cura.' : '');
+  if (c.t === 'med') return `Põe este remédio num órgão teu ${cor}.<ul><li>Órgão doente: fica <b>curado</b>.</li><li>Órgão saudável: fica <b>vacinado</b>.</li><li>Órgão vacinado: fica <b>imune</b> para sempre! Nenhum vírus nem tratamento lhe toca.</li></ul>` +
+    (c.c === 'multi' ? 'Este remédio serve para qualquer cor, mas qualquer vírus o pode destruir.' : '');
+  switch (c.k) {
+    case 'transplant': return 'Troca um órgão entre dois jogadores (podes ser tu ou não). Os vírus e remédios vão junto. Não funciona com órgãos imunes, e ninguém pode ficar com dois órgãos iguais.';
+    case 'thief': return 'Rouba um órgão de um adversário e põe-no no teu corpo, com vírus e remédios. Não dá para roubar órgãos imunes, nem um órgão que já tenhas.';
+    case 'contagion': return 'Passa os vírus dos teus órgãos doentes para órgãos dos adversários que estejam sem nada, da mesma cor. Os teus órgãos ficam curados e os deles ficam doentes!';
+    case 'glove': return 'Todos os outros jogadores deitam fora as cartas da mão e perdem a próxima vez!';
+    case 'error': return 'Troca o teu corpo inteiro pelo de outro jogador, com vírus, remédios e tudo. Até os órgãos imunes!';
+    case 'cthief': return `<b>Carta extra.</b> Rouba o ${TXT.organ[c.c]} de um adversário, <b>mesmo que esteja imune</b>! Não podes usar se já tiveres um.`;
+    case 'alien': return '<b>Carta extra.</b> Como o Transplante, mas os extraterrestres conseguem trocar até órgãos imunes!';
+    case 'ghost': return '<b>Carta extra.</b> O fantasma vai buscar a carta de cima do monte de descarte e dá-ta para a mão.';
+    case 'sneeze': return '<b>Carta extra.</b> ATCHIM! Todos passam as cartas da mão ao jogador seguinte.';
+  }
+  return '';
+}
+
+/* ---------- Som (gerado no próprio código) ---------- */
+const SFX = (() => {
+  let ctx = null, on = true, nb = null;
+  function ac() {
+    if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ctx = new C(); }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(f, t0, dur, o = {}) {
+    const c = ctx, T = c.currentTime + t0;
+    const os = c.createOscillator(), g = c.createGain();
+    os.type = o.type || 'sine';
+    os.frequency.setValueAtTime(f, T);
+    if (o.f2) os.frequency.exponentialRampToValueAtTime(o.f2, T + dur);
+    g.gain.setValueAtTime(0.0001, T);
+    g.gain.exponentialRampToValueAtTime(o.vol || 0.2, T + (o.a || 0.01));
+    g.gain.exponentialRampToValueAtTime(0.0001, T + dur);
+    os.connect(g).connect(c.destination);
+    os.start(T); os.stop(T + dur + 0.05);
+  }
+  function noise(t0, dur, o = {}) {
+    const c = ctx, T = c.currentTime + t0;
+    if (!nb) {
+      nb = c.createBuffer(1, c.sampleRate, c.sampleRate);
+      const d = nb.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = c.createBufferSource(); src.buffer = nb;
+    const fl = c.createBiquadFilter(); fl.type = o.type || 'bandpass'; fl.frequency.setValueAtTime(o.f || 1200, T); fl.Q.value = o.q || 1;
+    if (o.f2) fl.frequency.exponentialRampToValueAtTime(o.f2, T + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(o.vol || 0.2, T);
+    g.gain.exponentialRampToValueAtTime(0.0001, T + dur);
+    src.connect(fl).connect(g).connect(c.destination);
+    src.start(T); src.stop(T + dur + 0.05);
+  }
+  const S = {
+    click() { tone(660, 0, 0.06, { type: 'triangle', vol: 0.1 }); },
+    select() { tone(520, 0, 0.08, { type: 'triangle', vol: 0.12, f2: 780 }); },
+    card() { noise(0, 0.18, { vol: 0.16, f: 2500, f2: 700 }); },
+    draw() { tone(1100, 0, 0.05, { type: 'triangle', vol: 0.05 }); },
+    organ() { tone(420, 0, 0.14, { type: 'triangle', vol: 0.25, f2: 840 }); tone(840, 0.08, 0.14, { vol: 0.14 }); },
+    infect() { tone(320, 0, 0.4, { type: 'sawtooth', vol: 0.1, f2: 80 }); noise(0, 0.3, { vol: 0.12, f: 400 }); },
+    destroy() { noise(0, 0.5, { vol: 0.4, f: 380, type: 'lowpass' }); tone(170, 0, 0.45, { type: 'square', vol: 0.1, f2: 40 }); },
+    zap() { tone(1300, 0, 0.18, { type: 'square', vol: 0.07, f2: 200 }); },
+    cure() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.07, 0.22, { type: 'triangle', vol: 0.16 })); },
+    vax() { tone(700, 0, 0.15, { vol: 0.2, f2: 1050 }); tone(1050, 0.1, 0.15, { vol: 0.12 }); },
+    immune() { [784, 988, 1175, 1568, 2093].forEach((f, i) => tone(f, i * 0.07, 0.35, { vol: 0.13 })); },
+    swoosh() { noise(0, 0.35, { vol: 0.2, f: 500, f2: 3500 }); },
+    steal() { tone(950, 0, 0.1, { type: 'triangle', vol: 0.14 }); tone(700, 0.1, 0.1, { type: 'triangle', vol: 0.14 }); tone(1200, 0.2, 0.18, { type: 'triangle', vol: 0.14 }); },
+    snap() { noise(0, 0.09, { vol: 0.45, f: 3200, type: 'highpass' }); tone(200, 0.02, 0.1, { type: 'square', vol: 0.06 }); },
+    ghost() { tone(520, 0, 0.7, { vol: 0.14, f2: 260, a: 0.15 }); tone(530, 0, 0.7, { vol: 0.08, f2: 270, a: 0.15 }); },
+    sneeze() { noise(0, 0.12, { vol: 0.08, f: 1800 }); noise(0.2, 0.4, { vol: 0.35, f: 3500, f2: 700 }); },
+    wobble() { tone(300, 0, 0.5, { type: 'triangle', vol: 0.14, f2: 600 }); tone(600, 0.25, 0.4, { type: 'triangle', vol: 0.12, f2: 250 }); },
+    turn() { tone(880, 0, 0.14, { vol: 0.14 }); tone(1320, 0.1, 0.22, { vol: 0.12 }); },
+    nope() { tone(210, 0, 0.1, { type: 'square', vol: 0.07 }); tone(160, 0.12, 0.14, { type: 'square', vol: 0.07 }); },
+    win() { [523, 659, 784, 1047, 0, 784, 1047].forEach((f, i) => f && tone(f, i * 0.12, 0.3, { type: 'triangle', vol: 0.2 })); },
+    lose() { [392, 370, 349, 294].forEach((f, i) => tone(f, i * 0.26, 0.4, { type: 'sawtooth', vol: 0.07 })); },
+    medal() { [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, i * 0.09, 0.3, { vol: 0.12 })); }
+  };
+  return {
+    play(n) { if (!on) return; try { if (ac()) S[n] && S[n](); } catch (e) { } },
+    unlock() { try { ac(); } catch (e) { } },
+    set(v) { on = v; }
+  };
+})();
+const buzz = ms => { try { if (Prof.get()?.settings.vibrate && navigator.vibrate) navigator.vibrate(ms); } catch (e) { } };
+
+/* ---------- Armazenamento ---------- */
+const KEY = 'virus-jogo-v1';
+const Store = {
+  d: null,
+  load() {
+    try { this.d = JSON.parse(localStorage.getItem(KEY)); } catch (e) { }
+    if (!this.d || !Array.isArray(this.d.profiles)) this.d = { profiles: [], current: null };
+  },
+  save() { try { localStorage.setItem(KEY, JSON.stringify(this.d)); } catch (e) { } }
+};
+const AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐯', '🐵', '🦄', '🐙', '🐶', '🐱', '🐨', '🐲', '🤖', '👽', '🦖', '🐧', '🐰', '🦉'];
+const PCOLORS = ['#ff6b6b', '#4dabf7', '#ffd43b', '#51cf66', '#cc5de8', '#ff922b', '#20c997', '#f06595'];
+function newProfile(name, avatar, color) {
+  return {
+    id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name, avatar, color, created: Date.now(),
+    settings: { opponents: 2, level: 'easy', training: false, speed: 'normal', sound: true, tips: true, vibrate: true,
+      extras: { cthief: false, alien: false, ghost: false, sneeze: false } },
+    stats: { played: 0, wins: 0, streak: 0, best: 0, fastest: null, byLevel: { easy: { p: 0, w: 0 }, normal: { p: 0, w: 0 }, hard: { p: 0, w: 0 } },
+      tot: { organ: 0, virus: 0, destroy: 0, cure: 0, vaccinate: 0, immune: 0, steal: 0, transplant: 0, contagion: 0, glove: 0, error: 0 } },
+    history: [], medals: {}, seen: {}, tutorialDone: false, save: null
+  };
+}
+const Prof = {
+  get() { return Store.d.profiles.find(p => p.id === Store.d.current) || null; },
+  set(id) { Store.d.current = id; Store.save(); }
+};
+
+/* ---------- Medalhas ---------- */
+const MEDALS = [
+  { id: 'first', icon: '🏆', name: 'Primeira Vitória', desc: 'Ganha o teu primeiro jogo.', ok: c => c.won },
+  { id: 'games10', icon: '🎮', name: 'Jogador', desc: 'Joga 10 jogos.', ok: c => c.P.stats.played >= 10 },
+  { id: 'games50', icon: '🕹️', name: 'Doutor em Vírus', desc: 'Joga 50 jogos.', ok: c => c.P.stats.played >= 50 },
+  { id: 'wins10', icon: '🥇', name: 'Campeão', desc: 'Ganha 10 jogos.', ok: c => c.P.stats.wins >= 10 },
+  { id: 'wins50', icon: '👑', name: 'Lenda do Hospital', desc: 'Ganha 50 jogos.', ok: c => c.P.stats.wins >= 50 },
+  { id: 'normal', icon: '🩺', name: 'Médico a Sério', desc: 'Ganha no nível Normal.', ok: c => c.won && c.level !== 'easy' && !c.tutorial },
+  { id: 'hard', icon: '😈', name: 'Chefe do Hospital', desc: 'Ganha no nível Difícil.', ok: c => c.won && c.level === 'hard' },
+  { id: 'five', icon: '🖐️', name: 'Contra Todos', desc: 'Ganha contra 5 adversários.', ok: c => c.won && c.nOpp >= 5 },
+  { id: 'clean', icon: '🧼', name: 'Sempre Saudável', desc: 'Ganha sem nunca teres um órgão doente.', ok: c => c.won && c.me.st.gotInfected === 0 },
+  { id: 'fast', icon: '⚡', name: 'Relâmpago', desc: 'Ganha em 8 jogadas ou menos.', ok: c => c.won && c.me.st.turns <= 8 },
+  { id: 'streak3', icon: '🔥', name: 'Em Chamas', desc: 'Ganha 3 jogos seguidos.', ok: c => c.P.stats.streak >= 3 },
+  { id: 'immune3', icon: '🛡️', name: 'Blindado', desc: 'Tem 3 órgãos imunes ao mesmo tempo.', ok: c => c.me.st.maxImmune >= 3 },
+  { id: 'comeback', icon: '🦸', name: 'Reviravolta', desc: 'Ganha depois de perderes 3 órgãos no mesmo jogo.', ok: c => c.won && c.me.st.lostOrgans >= 3 },
+  { id: 'error', icon: '🔄', name: 'Troca-Tintas', desc: 'Ganha o jogo com um Erro Médico.', ok: c => c.won && c.s.winKind === 'error' },
+  { id: 'glove', icon: '🧤', name: 'Luva Certeira', desc: 'Usa a Luva de Látex.', ok: c => c.me.st.glove > 0 },
+  { id: 'destroyer', icon: '💥', name: 'Destruidor', desc: 'Destrói 25 órgãos (no total).', ok: c => c.P.stats.tot.destroy >= 25 },
+  { id: 'doctor', icon: '💊', name: 'Grande Médico', desc: 'Cura 25 vírus (no total).', ok: c => c.P.stats.tot.cure >= 25 },
+  { id: 'thief', icon: '🦝', name: 'Mãos Leves', desc: 'Rouba 10 órgãos (no total).', ok: c => c.P.stats.tot.steal >= 10 }
+];
+
+const SPEEDS = {
+  slow: { think: 1400, fly: 650, after: 750, big: 1500 },
+  normal: { think: 850, fly: 460, after: 450, big: 1100 },
+  fast: { think: 380, fly: 280, after: 220, big: 750 }
+};
+const LEVELS = { easy: { name: 'Fácil', icon: '😊' }, normal: { name: 'Normal', icon: '😐' }, hard: { name: 'Difícil', icon: '😈' } };
+
+/* ---------- Cartas em HTML ---------- */
+const BADGE = {
+  organ: `<svg viewBox="0 0 20 20"><path d="M10 17 C4 13 2 9 3.5 6 C5 3 8.5 3.5 10 6 C11.5 3.5 15 3 16.5 6 C18 9 16 13 10 17Z" fill="#ec4038" stroke="#1d1330" stroke-width="1.6"/></svg>`,
+  virus: `<svg viewBox="0 0 20 20"><g stroke="#1d1330" stroke-width="1.6" stroke-linecap="round"><path d="M10 2v3M10 15v3M2 10h3M15 10h3M4.3 4.3l2.1 2.1M13.6 13.6l2.1 2.1M4.3 15.7l2.1-2.1M13.6 6.4l2.1-2.1"/></g><circle cx="10" cy="10" r="5" fill="#35b84b" stroke="#1d1330" stroke-width="1.6"/></svg>`,
+  med: `<svg viewBox="0 0 20 20"><path d="M7.5 2.5h5v5h5v5h-5v5h-5v-5h-5v-5h5z" fill="#fff" stroke="#1d1330" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.7 3.7h2.6v5h5v2.6h-5v5H8.7v-5h-5V8.7h5z" fill="#ec4038"/></svg>`,
+  treat: `<svg viewBox="0 0 20 20"><path d="M10 1.8l2.4 5 5.5.7-4 3.8 1 5.4-4.9-2.6-4.9 2.6 1-5.4-4-3.8 5.5-.7z" fill="#ffcc1f" stroke="#1d1330" stroke-width="1.5" stroke-linejoin="round"/></svg>`
+};
+function cardHTML(card, o = {}) {
+  const col = card.t === 'treat' ? 'purple' : card.c;
+  return `<div class="card t-${card.t} col-${col}${o.mini ? ' mini' : ''}${o.cls ? ' ' + o.cls : ''}" data-card="${card.id}">
+    <div class="card-in">${ART.art(card, o.mood)}</div>
+    <div class="card-badge">${BADGE[card.t]}</div>
+    <div class="card-name">${esc(shortName(card))}</div></div>`;
+}
+const backHTML = (cls = '') => `<div class="card back ${cls}">${ART.back()}</div>`;
+const MOOD = { free: 'happy', infected: 'sick', vaccinated: 'vax', immune: 'immune' };
+const SHIELD = `<svg viewBox="0 0 40 46"><path d="M20 2 L37 8 C37 26 31 38 20 44 C9 38 3 26 3 8Z" fill="url(#g-gold)" stroke="#1d1330" stroke-width="3" stroke-linejoin="round"/><path d="M12 22 l6 6 l11 -12" stroke="#1d1330" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/* ================= Aplicação ================= */
+const G = { s: null, cfg: null, busy: false, sel: null, moves: [], discard: false, dsel: new Set(), undo: [], hint: null, running: false, token: 0 };
+const app = () => $('#app');
+
+function show(html, cls) {
+  const a = app();
+  a.className = 'screen ' + (cls || '');
+  a.innerHTML = html;
+  a.scrollTop = 0;
+}
+
+/* ---------- Ecrã: escolher jogador ---------- */
+function screenProfiles() {
+  G.token++;
+  const ps = Store.d.profiles;
+  show(`<div class="page center-page">
+    <div class="logo">${ART.logo()}</div>
+    <h2 class="h-sub">Quem vai jogar?</h2>
+    <div class="profiles">
+      ${ps.map(p => `<button class="prof-card" data-act="pick" data-id="${p.id}" style="--pc:${p.color}">
+        <span class="prof-av">${p.avatar}</span><span class="prof-name">${esc(p.name)}</span>
+        <span class="prof-sub">🏆 ${p.stats.wins} vitória${p.stats.wins === 1 ? '' : 's'}</span></button>`).join('')}
+      <button class="prof-card add" data-act="newprof"><span class="prof-av">➕</span><span class="prof-name">Novo jogador</span></button>
+    </div>
+    <div class="deco-cards">${['red', 'blue', 'yellow', 'green'].map((c, i) => `<div style="--r:${-18 + i * 12}deg">${cardHTML({ id: 'd' + i, t: 'organ', c })}</div>`).join('')}</div>
+  </div>`, 'bg-home');
+}
+
+function profileForm(p) {
+  const av = p ? p.avatar : rnd(AVATARS), col = p ? p.color : rnd(PCOLORS);
+  modal(`<h2>${p ? 'Editar jogador' : 'Novo jogador'}</h2>
+    <label class="lbl">Nome</label>
+    <input class="inp" id="pf-name" maxlength="14" placeholder="O teu nome" value="${p ? esc(p.name) : ''}" autocomplete="off">
+    <label class="lbl">Escolhe um boneco</label>
+    <div class="av-grid">${AVATARS.map(a => `<button class="av-opt${a === av ? ' on' : ''}" data-av="${a}">${a}</button>`).join('')}</div>
+    <label class="lbl">Cor preferida</label>
+    <div class="col-grid">${PCOLORS.map(c => `<button class="col-opt${c === col ? ' on' : ''}" data-col="${c}" style="background:${c}"></button>`).join('')}</div>
+    <div class="modal-btns"><button class="btn ghost" data-act="close">Cancelar</button><button class="btn primary" id="pf-ok">Guardar</button></div>`);
+  const m = $('#modal');
+  m.addEventListener('click', e => {
+    const a = e.target.closest('.av-opt'); if (a) { $$('.av-opt', m).forEach(x => x.classList.remove('on')); a.classList.add('on'); SFX.play('click'); }
+    const c = e.target.closest('.col-opt'); if (c) { $$('.col-opt', m).forEach(x => x.classList.remove('on')); c.classList.add('on'); SFX.play('click'); }
+  });
+  $('#pf-ok').onclick = () => {
+    const name = $('#pf-name').value.trim();
+    if (!name) { $('#pf-name').classList.add('shake'); setTimeout(() => $('#pf-name').classList.remove('shake'), 500); SFX.play('nope'); return; }
+    const avatar = $('.av-opt.on', m).dataset.av, color = $('.col-opt.on', m).dataset.col;
+    if (p) { p.name = name; p.avatar = avatar; p.color = color; Store.save(); closeModal(); screenSettings(); return; }
+    const np = newProfile(name, avatar, color);
+    Store.d.profiles.push(np); Prof.set(np.id); Store.save(); closeModal(); SFX.play('organ');
+    screenMenu();
+  };
+  setTimeout(() => $('#pf-name')?.focus(), 100);
+}
+
+/* ---------- Ecrã: menu principal ---------- */
+function screenMenu() {
+  G.token++;
+  const p = Prof.get(); if (!p) return screenProfiles();
+  SFX.set(p.settings.sound);
+  const st = p.stats;
+  const medals = Object.keys(p.medals).length;
+  show(`<div class="page center-page">
+    <div class="menu-top">
+      <button class="chip" data-act="profiles"><span>${p.avatar}</span> ${esc(p.name)} <small>trocar</small></button>
+    </div>
+    <div class="logo small">${ART.logo()}</div>
+    <p class="hello">Olá, <b>${esc(p.name)}</b>! ${st.played ? `Já ganhaste <b>${st.wins}</b> de ${st.played} jogos.` : 'Pronto para salvar o hospital?'}</p>
+    <div class="menu-btns">
+      ${p.save ? `<button class="btn big green" data-act="resume">▶️ Continuar jogo</button>` : ''}
+      <button class="btn big primary" data-act="setup">🎲 Jogar</button>
+      <button class="btn big ${p.tutorialDone ? '' : 'pulse-btn '}teal" data-act="tutorial">🎓 Aprender a jogar</button>
+      <div class="menu-row">
+        <button class="btn mid" data-act="rules">📖 Regras</button>
+        <button class="btn mid" data-act="stats">📊 Estatísticas</button>
+      </div>
+      <div class="menu-row">
+        <button class="btn mid" data-act="medals">🏅 Medalhas <span class="pill">${medals}/${MEDALS.length}</span></button>
+        <button class="btn mid" data-act="settings">⚙️ Definições</button>
+      </div>
+    </div>
+  </div>`, 'bg-home');
+}
+
+/* ---------- Ecrã: preparar jogo ---------- */
+function screenSetup() {
+  const p = Prof.get(), S = p.settings;
+  const n = S.opponents;
+  show(`<div class="page">
+    <div class="page-head"><button class="icon-btn" data-act="menu">←</button><h1>Novo jogo</h1></div>
+    <section class="panel">
+      <h3>Quantos adversários?</h3>
+      <div class="seg" id="seg-opp">${[1, 2, 3, 4, 5].map(i => `<button class="seg-b${i === n ? ' on' : ''}" data-opp="${i}">${i}</button>`).join('')}</div>
+      <div class="bot-row">${Array.from({ length: n }, (_, i) => `<div class="bot-av">${ART.botFace(i)}</div>`).join('')}</div>
+    </section>
+    <section class="panel">
+      <h3>Dificuldade</h3>
+      <div class="seg lv">${Object.entries(LEVELS).map(([k, v]) => `<button class="seg-b${k === S.level ? ' on' : ''}" data-lv="${k}"><span class="em">${v.icon}</span>${v.name}</button>`).join('')}</div>
+      <p class="note">${({ easy: 'Os médicos distraem-se e fazem jogadas ao calhas.', normal: 'Os médicos pensam antes de jogar.', hard: 'Os médicos atacam sempre quem está a ganhar. Boa sorte!' })[S.level]}</p>
+    </section>
+    <section class="panel">
+      <label class="toggle"><input type="checkbox" id="set-train" ${S.training ? 'checked' : ''}><span class="tg"></span>
+        <span><b>Modo treino</b><br><small>Vês as cartas dos adversários e podes desfazer jogadas. Não conta para as medalhas de vitória.</small></span></label>
+    </section>
+    <section class="panel">
+      <h3>Cartas extra <small class="muted">(ideias novas, opcionais)</small></h3>
+      ${extraToggles(S)}
+    </section>
+    <button class="btn big primary wide" data-act="start">Começar! 🚀</button>
+  </div>`);
+}
+function extraToggles(S) {
+  const X = [
+    ['cthief', 'Ladrões Coloridos', 'Roubam um órgão da sua cor, mesmo imune.', { t: 'treat', k: 'cthief', c: 'red' }],
+    ['alien', 'Transplante Alienígena', 'Troca órgãos, até os imunes.', { t: 'treat', k: 'alien' }],
+    ['ghost', 'Fantasma', 'Vai buscar a carta de cima do descarte.', { t: 'treat', k: 'ghost' }],
+    ['sneeze', 'Atchim!', 'Todos passam as cartas ao seguinte.', { t: 'treat', k: 'sneeze' }]
+  ];
+  return `<div class="extras">${X.map(([k, n, d, c]) => `<label class="extra${S.extras[k] ? ' on' : ''}">
+    <input type="checkbox" data-extra="${k}" ${S.extras[k] ? 'checked' : ''}>
+    <div class="extra-card">${cardHTML(Object.assign({ id: 'x' + k }, c))}</div>
+    <div><b>${n}</b><small>${d}</small></div></label>`).join('')}</div>`;
+}
+
+/* ---------- Ecrã: estatísticas ---------- */
+function screenStats() {
+  const p = Prof.get(), st = p.stats;
+  const pct = st.played ? Math.round(st.wins / st.played * 100) : 0;
+  const bars = Object.entries(LEVELS).map(([k, v]) => {
+    const b = st.byLevel[k]; const w = b.p ? Math.round(b.w / b.p * 100) : 0;
+    return `<div class="bar-row"><span class="bar-l">${v.icon} ${v.name}</span><div class="bar"><div class="bar-f lv-${k}" style="width:${w}%"></div></div><span class="bar-v">${b.w}/${b.p}</span></div>`;
+  }).join('');
+  const T = st.tot;
+  const fun = [['🫀', 'Órgãos colocados', T.organ], ['🦠', 'Vírus lançados', T.virus], ['💥', 'Órgãos destruídos', T.destroy], ['💊', 'Vírus curados', T.cure],
+    ['💉', 'Vacinas dadas', T.vaccinate], ['🛡️', 'Imunizações', T.immune], ['🦝', 'Órgãos roubados', T.steal], ['🔁', 'Transplantes', T.transplant],
+    ['🤧', 'Contágios', T.contagion], ['🧤', 'Luvas usadas', T.glove], ['🔄', 'Erros médicos', T.error]];
+  const hist = p.history.slice(0, 25).map(h => {
+    const d = new Date(h.d);
+    return `<div class="hist ${h.won ? 'w' : 'l'}"><span class="hist-r">${h.won ? '🏆' : '💀'}</span>
+      <span class="hist-t"><b>${h.won ? 'Vitória' : 'Ganhou ' + esc(h.winner)}</b><small>${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })} · ${h.n} adversário${h.n > 1 ? 's' : ''} · ${LEVELS[h.lvl]?.icon || ''} ${LEVELS[h.lvl]?.name || ''}${h.train ? ' · treino' : ''}</small></span>
+      <span class="hist-n">${h.turns} jog.</span></div>`;
+  }).join('') || '<p class="note">Ainda não há jogos. Vamos a isso!</p>';
+  show(`<div class="page">
+    <div class="page-head"><button class="icon-btn" data-act="menu">←</button><h1>Estatísticas de ${esc(p.name)}</h1></div>
+    <div class="tiles">
+      <div class="tile"><b>${st.played}</b><span>Jogos</span></div>
+      <div class="tile gold"><b>${st.wins}</b><span>Vitórias</span></div>
+      <div class="tile"><b>${pct}%</b><span>Vitórias</span></div>
+      <div class="tile"><b>${st.streak}</b><span>Seguidas agora</span></div>
+      <div class="tile"><b>${st.best}</b><span>Melhor sequência</span></div>
+      <div class="tile"><b>${st.fastest ?? '—'}</b><span>Vitória mais rápida (jogadas)</span></div>
+    </div>
+    <section class="panel"><h3>Vitórias por dificuldade</h3>${bars}</section>
+    <section class="panel"><h3>Curiosidades</h3><div class="fun">${fun.map(f => `<div class="fun-i"><span>${f[0]}</span><b>${f[2]}</b><small>${f[1]}</small></div>`).join('')}</div></section>
+    <section class="panel"><h3>Últimos jogos</h3>${hist}</section>
+  </div>`);
+}
+
+function screenMedals() {
+  const p = Prof.get();
+  show(`<div class="page">
+    <div class="page-head"><button class="icon-btn" data-act="menu">←</button><h1>Medalhas</h1></div>
+    <p class="note center">Tens ${Object.keys(p.medals).length} de ${MEDALS.length} medalhas.</p>
+    <div class="medals">${MEDALS.map(m => {
+      const got = p.medals[m.id];
+      return `<div class="medal ${got ? 'got' : ''}"><div class="medal-i">${got ? m.icon : '🔒'}</div><b>${m.name}</b><small>${m.desc}</small>${got ? `<em>${new Date(got).toLocaleDateString('pt-PT')}</em>` : ''}</div>`;
+    }).join('')}</div>
+  </div>`);
+}
+
+function screenSettings() {
+  const p = Prof.get(), S = p.settings;
+  show(`<div class="page">
+    <div class="page-head"><button class="icon-btn" data-act="menu">←</button><h1>Definições</h1></div>
+    <section class="panel">
+      <button class="prof-edit" data-act="editprof"><span class="prof-av">${p.avatar}</span><span><b>${esc(p.name)}</b><small>Mudar nome e boneco</small></span><span>✏️</span></button>
+    </section>
+    <section class="panel">
+      <label class="toggle"><input type="checkbox" data-set="sound" ${S.sound ? 'checked' : ''}><span class="tg"></span><span><b>Sons</b></span></label>
+      <label class="toggle"><input type="checkbox" data-set="vibrate" ${S.vibrate ? 'checked' : ''}><span class="tg"></span><span><b>Vibrar</b><br><small>Quando atacam os teus órgãos.</small></span></label>
+      <label class="toggle"><input type="checkbox" data-set="tips" ${S.tips ? 'checked' : ''}><span class="tg"></span><span><b>Explicações</b><br><small>Explica cada carta da primeira vez que a usas.</small></span></label>
+      <h3>Velocidade dos adversários</h3>
+      <div class="seg">${[['slow', '🐢 Devagar'], ['normal', '🚶 Normal'], ['fast', '🐇 Rápido']].map(([k, n]) => `<button class="seg-b${S.speed === k ? ' on' : ''}" data-speed="${k}">${n}</button>`).join('')}</div>
+    </section>
+    <section class="panel"><h3>Cartas extra</h3>${extraToggles(S)}</section>
+    <section class="panel danger">
+      <button class="btn mid" data-act="resettips">🔁 Voltar a mostrar as explicações</button>
+      <button class="btn mid red" data-act="resetstats">🗑️ Apagar estatísticas e medalhas</button>
+      <button class="btn mid red" data-act="delprof">❌ Apagar jogador</button>
+    </section>
+    <p class="note center">Vírus! · versão digital para jogar em família · funciona sem internet</p>
+  </div>`);
+}
+
+/* ---------- Regras ---------- */
+function screenRules() {
+  const C = (t, c, k, mood) => cardHTML({ id: 'r' + t + c + k + (mood || ''), t, c: c || null, k: k || null }, { mood });
+  const sec = (title, cards, text) => `<section class="panel rule"><h3>${title}</h3><div class="rule-cards">${cards}</div><div class="rule-t">${text}</div></section>`;
+  show(`<div class="page">
+    <div class="page-head"><button class="icon-btn" data-act="back">←</button><h1>Como jogar</h1></div>
+    ${sec('🎯 Objetivo', C('organ', 'red') + C('organ', 'blue') + C('organ', 'yellow') + C('organ', 'green'),
+      'O primeiro a ter <b>4 órgãos diferentes e saudáveis</b> no seu corpo ganha! Um órgão é saudável se não tiver vírus.')}
+    ${sec('🔄 Cada vez', backHTML(),
+      'Tens sempre 3 cartas. Na tua vez fazes <b>uma</b> destas coisas:<ul><li><b>Jogar</b> uma carta, ou</li><li><b>Descartar</b> as cartas que quiseres.</li></ul>Depois compras até voltares a ter 3.')}
+    ${sec('🫀 Órgãos', C('organ', 'red') + C('organ', 'multi'), 'Põe órgãos no teu corpo. Não podes ter dois iguais. O <b>Órgão Multicolor</b> conta como um órgão diferente e aceita remédios de todas as cores, mas também vírus de todas as cores.')}
+    ${sec('🦠 Vírus', C('virus', 'green') + C('organ', 'green', null, 'sick'),
+      'Põe vírus nos órgãos dos adversários, da mesma cor.<ul><li>1 vírus: o órgão fica <b>doente</b> e não conta para ganhar.</li><li>2 vírus: o órgão é <b>destruído</b>.</li><li>Se o órgão tiver 1 remédio, o vírus e o remédio desaparecem.</li></ul>')}
+    ${sec('💊 Remédios', C('med', 'blue') + C('organ', 'blue', null, 'vax') + C('organ', 'blue', null, 'immune'),
+      'Põe remédios nos teus órgãos, da mesma cor.<ul><li>Num órgão doente: <b>cura-o</b>.</li><li>Num órgão saudável: <b>vacina-o</b>.</li><li>Com 2 remédios: fica <b>imune</b> para sempre! Nada lhe pode tocar.</li></ul>')}
+    ${sec('🌈 Cartas multicolor', C('virus', 'multi') + C('med', 'multi'), 'Servem para qualquer cor. São muito fortes, mas também muito frágeis: qualquer carta as afeta.')}
+    ${sec('⭐ Tratamentos', C('treat', null, 'transplant') + C('treat', null, 'thief') + C('treat', null, 'contagion') + C('treat', null, 'glove') + C('treat', null, 'error'),
+      `<ul class="tl"><li><b>Transplante:</b> ${cardHelp({ t: 'treat', k: 'transplant' })}</li><li><b>Ladrão de Órgãos:</b> ${cardHelp({ t: 'treat', k: 'thief' })}</li><li><b>Contágio:</b> ${cardHelp({ t: 'treat', k: 'contagion' })}</li><li><b>Luva de Látex:</b> ${cardHelp({ t: 'treat', k: 'glove' })}</li><li><b>Erro Médico:</b> ${cardHelp({ t: 'treat', k: 'error' })}</li></ul>`)}
+    ${sec('✨ Cartas extra (opcionais)', C('treat', 'green', 'cthief') + C('treat', null, 'alien') + C('treat', null, 'ghost') + C('treat', null, 'sneeze'),
+      '<ul class="tl"><li><b>Ladrões Coloridos:</b> roubam um órgão da sua cor, mesmo imune.</li><li><b>Transplante Alienígena:</b> troca órgãos, até os imunes.</li><li><b>Fantasma:</b> vai buscar a carta de cima do descarte.</li><li><b>Atchim!:</b> todos passam as cartas ao jogador seguinte.</li></ul>Liga-as nas Definições ou antes de começar um jogo.')}
+    ${sec('👆 No telemóvel', C('med', 'red', null),
+      '<ul><li>Toca numa carta para a escolher. Os sítios onde a podes jogar ficam a brilhar.</li><li>Toca e mantém o dedo numa carta para ver o que ela faz.</li><li>O botão 💡 dá-te uma dica.</li></ul>')}
+  </div>`);
+}
+
+/* ---------- Janelas ---------- */
+function modal(html, cls = '') {
+  closeModal();
+  const m = document.createElement('div');
+  m.id = 'modal-wrap';
+  m.innerHTML = `<div class="modal ${cls}" id="modal">${html}</div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m && !cls.includes('sticky')) closeModal(); });
+  requestAnimationFrame(() => m.classList.add('in'));
+  return m;
+}
+function closeModal() { $('#modal-wrap')?.remove(); G.paused = false; }
+function toast(html, ms = 2200) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = html;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add('out'), ms);
+  setTimeout(() => t.remove(), ms + 400);
+}
+function showCardInfo(card) {
+  SFX.play('select');
+  modal(`<div class="info">
+    <div class="info-card">${cardHTML(card)}</div>
+    <h2>${esc(cardName(card))}</h2>
+    <div class="info-t">${cardHelp(card)}</div>
+    <button class="btn primary wide" data-act="close">Percebi!</button></div>`);
+}
+
+/* ================= JOGO ================= */
+function botName(i) { return ART.BOTS[i % ART.BOTS.length].name; }
+
+function startGame(opts = {}) {
+  const p = Prof.get(), S = p.settings;
+  const tutorial = !!opts.tutorial;
+  const nOpp = tutorial ? 1 : S.opponents;
+  const level = tutorial ? 'easy' : S.level;
+  const faces = ENG.shuffle(ART.BOTS.map((b, i) => i)).slice(0, nOpp);
+  const players = [{ name: p.name, avatar: p.avatar, isHuman: true }];
+  faces.forEach(f => players.push({ name: botName(f), face: f, isHuman: false, level }));
+  const s = ENG.newGame({ players, extras: tutorial ? {} : S.extras });
+  if (tutorial) {
+    s.turn = 0;
+    const want = [c => c.t === 'organ' && c.c === 'red', c => c.t === 'organ' && c.c === 'blue', c => c.t === 'med' && c.c === 'red'];
+    const me = s.players[0];
+    s.deck.push(...me.hand); me.hand = [];
+    for (const w of want) { const i = s.deck.findIndex(w); me.hand.push(s.deck.splice(i, 1)[0]); }
+    ENG.shuffle(s.deck);
+  }
+  G.cfg = { level, training: tutorial || S.training, tutorial, nOpp };
+  G.s = s; G.undo = []; G.sel = null; G.discard = false; G.dsel.clear(); G.hint = null;
+  saveGame();
+  if (tutorial) tutorialIntro(() => enterGame());
+  else enterGame();
+}
+function saveGame() {
+  const p = Prof.get(); if (!p || !G.s) return;
+  p.save = G.s.winner === null ? { s: G.s, cfg: G.cfg } : null;
+  Store.save();
+}
+function resumeGame() {
+  const p = Prof.get(); if (!p?.save) return;
+  G.s = p.save.s; G.cfg = p.save.cfg; G.undo = []; G.sel = null; G.discard = false; G.dsel.clear(); G.hint = null;
+  enterGame();
+}
+
+function enterGame() {
+  G.token++;
+  show(`<div id="game">
+    <header class="g-top">
+      <button class="icon-btn" data-act="pause" aria-label="Pausa">☰</button>
+      <div class="g-status" id="g-status"></div>
+      <div class="g-tools">
+        ${G.cfg.training ? `<button class="icon-btn" data-act="undo" id="b-undo" aria-label="Desfazer">↶</button>` : ''}
+        <button class="icon-btn" data-act="hint" aria-label="Dica">💡</button>
+        <button class="icon-btn" data-act="sound" id="b-sound" aria-label="Som">${Prof.get().settings.sound ? '🔊' : '🔇'}</button>
+      </div>
+    </header>
+    <section id="opps"></section>
+    <section id="mid"></section>
+    <section id="me"></section>
+    <section id="handbar"></section>
+    <div id="fx"></div>
+  </div>`, 'game-screen');
+  layout();
+  render();
+  runLoop();
+}
+
+/* ---------- Tamanhos ---------- */
+function layout() {
+  const root = $('#game'); if (!root || !G.s) return;
+  const W = innerWidth, H = innerHeight, land = W > H * 1.05;
+  const n = G.s.players.length - 1;
+  root.classList.toggle('land', land);
+  let hw, bw, ow, dw, cols;
+  if (!land) {
+    const top = 50;
+    hw = Math.min((W - 116) / 3, (H * 0.18) / 1.4, 132);
+    bw = Math.min((W - 24) / 5.5, (H * 0.135) / 1.4, 116);
+    dw = Math.min(W * 0.13, (H * 0.075) / 1.4, 66);
+    const midH = dw * 1.4 + 12, meH = bw * 1.4 * 1.15 + 34, handH = hw * 1.4 + 28;
+    const avail = H - top - midH - meH - handH - 12;
+    const fit = c => { const rows = Math.ceil(n / c); const ph = avail / rows - 8; return Math.min((W / c - 18) / 5.6, (ph - 50) / 1.58, 96); };
+    cols = n >= 2 && fit(2) > fit(1) ? 2 : 1;
+    ow = fit(cols);
+  } else {
+    const top = 46, colW = W * 0.52;
+    hw = Math.min((H * 0.3) / 1.4, (W - colW - 116) / 3, 120);
+    bw = Math.min((W - colW - 24) / 5.6, (H * 0.27) / 1.4, 104);
+    dw = Math.min((H * 0.14) / 1.4, 58);
+    const avail = H - top - (dw * 1.4 + 14);
+    const fit = c => { const rows = Math.ceil(n / c); const ph = avail / rows - 8; return Math.min((colW / c - 18) / 5.6, (ph - 50) / 1.58, 88); };
+    cols = n >= 2 && fit(2) > fit(1) ? 2 : 1;
+    ow = fit(cols);
+  }
+  root.style.setProperty('--hw', Math.floor(hw) + 'px');
+  root.style.setProperty('--bw', Math.floor(bw) + 'px');
+  root.style.setProperty('--ow', Math.max(22, Math.floor(ow)) + 'px');
+  root.style.setProperty('--dw', Math.floor(dw) + 'px');
+  root.style.setProperty('--cols', cols);
+}
+
+/* ---------- Desenhar o jogo ---------- */
+function targetsInfo() {
+  const t = { slots: new Set(), opps: new Set(), body: false, button: false };
+  if (!G.sel) return t;
+  const card = G.s.players[0].hand.find(c => c.id === G.sel.cardId);
+  if (!card) return t;
+  for (const m of G.moves) {
+    const tg = m.target;
+    if (card.t === 'organ') t.body = true;
+    else if (card.t === 'virus' || card.t === 'med' || card.k === 'thief' || card.k === 'cthief') t.slots.add(tg.oid);
+    else if (card.k === 'transplant' || card.k === 'alien') {
+      if (!G.sel.first) { t.slots.add(tg.a.oid); t.slots.add(tg.b.oid); }
+      else if (tg.a.oid === G.sel.first) t.slots.add(tg.b.oid);
+      else if (tg.b.oid === G.sel.first) t.slots.add(tg.a.oid);
+    } else if (card.k === 'error') t.opps.add(tg.p);
+    else t.button = true;
+  }
+  return t;
+}
+
+function slotHTML(sl, pi, mini, T) {
+  const st = ENG.slotState(sl);
+  const oid = sl.organ.id;
+  let cls = `slot st-${st}`;
+  if (T.slots.has(oid)) cls += ' target';
+  if (G.sel?.first === oid) cls += ' picked';
+  if (G.hint && hintHas(oid)) cls += ' hint';
+  let mods = '';
+  if (st === 'immune') mods = `<div class="shield">${SHIELD}</div>`;
+  else sl.mods.forEach((m, i) => { mods += `<div class="mod mod-${i}">${cardHTML(m, { mini: true })}</div>`; });
+  return `<div class="${cls}" data-oid="${oid}" data-pi="${pi}">${cardHTML(sl.organ, { mood: MOOD[st], mini })}${mods}</div>`;
+}
+function bodyHTML(p, pi, mini, T) {
+  let h = '';
+  for (const c of ORDER) {
+    const sl = p.body.find(x => x.organ.c === c);
+    if (sl) h += slotHTML(sl, pi, mini, T);
+    else {
+      const selC = pi === 0 && T.body && G.s.players[0].hand.find(x => x.id === G.sel.cardId)?.c === c;
+      const hintC = pi === 0 && G.hint?.type === 'play' && G.s.players[0].hand.find(x => x.id === G.hint.cardId && x.t === 'organ')?.c === c;
+      h += `<div class="ph ph-${c}${selC ? ' target' : ''}${hintC ? ' hint' : ''}" data-ph="${pi}-${c}"></div>`;
+    }
+  }
+  return h;
+}
+function hintHas(oid) {
+  const h = G.hint; if (!h || h.type !== 'play') return false;
+  const t = h.target || {};
+  return t.oid === oid || t.a?.oid === oid || t.b?.oid === oid;
+}
+function healthBadge(p) {
+  const h = ENG.healthyCount(p.body);
+  return `<span class="hb${h >= 3 ? ' hot' : ''}">${'●'.repeat(Math.min(h, 4))}${'○'.repeat(Math.max(0, 4 - h))}</span>`;
+}
+
+function render() {
+  const s = G.s; if (!s || !$('#game')) return;
+  const T = targetsInfo();
+  const myTurn = s.turn === 0 && s.winner === null;
+  const training = G.cfg.training;
+  // adversários
+  $('#opps').innerHTML = s.players.slice(1).map((p, i) => {
+    const pi = i + 1;
+    const hand = training
+      ? p.hand.map(c => cardHTML(c, { mini: true, cls: 'hc' })).join('')
+      : p.hand.map(() => backHTML('hc')).join('');
+    return `<div class="opp${s.turn === pi && s.winner === null ? ' active' : ''}${T.opps.has(pi) ? ' target' : ''}${G.hint?.target?.p === pi && G.hint?.target && !G.hint.target.oid ? ' hint' : ''}" data-opp="${pi}">
+      <div class="opp-head"><div class="av">${ART.botFace(p.face)}</div><div class="opp-name">${esc(p.name)}</div>${healthBadge(p)}<div class="opp-hand" data-hand="${pi}">${hand}</div></div>
+      <div class="body" data-body="${pi}">${bodyHTML(p, pi, true, T)}</div></div>`;
+  }).join('');
+  // centro
+  const top = s.discard[s.discard.length - 1];
+  const lastLog = s.log[s.log.length - 1] || 'Boa sorte!';
+  $('#mid').innerHTML = `
+    <div class="pile" data-deck>${backHTML()}<span class="cnt">${s.deck.length}</span></div>
+    <div class="pile disc${G.discard ? ' target' : ''}" data-discard>${top ? cardHTML(top) : '<div class="empty-pile">Descarte</div>'}</div>
+    <button class="logline" data-act="log">${lastLog}</button>`;
+  // o meu corpo
+  const me = s.players[0];
+  $('#me').innerHTML = `
+    <div class="me-head"><span class="me-av">${me.avatar}</span><b>${esc(me.name)}</b>${healthBadge(me)}<div class="prompt" id="prompt">${promptHTML(T)}</div></div>
+    <div class="body mine${T.body ? ' target' : ''}${myTurn ? ' active' : ''}" data-body="0">${bodyHTML(me, 0, false, T)}</div>`;
+  // mão
+  $('#handbar').innerHTML = `<div id="hand" class="${myTurn && !G.busy ? 'live' : ''}">${me.hand.map(c => {
+    let cls = 'hc';
+    if (G.sel?.cardId === c.id) cls += ' sel';
+    if (G.discard && G.dsel.has(c.id)) cls += ' dsel';
+    if (G.hint && ((G.hint.type === 'play' && G.hint.cardId === c.id) || (G.hint.type === 'discard' && G.hint.cardIds.includes(c.id)))) cls += ' hint';
+    return cardHTML(c, { cls });
+  }).join('')}</div>
+    <div class="hand-acts">${G.discard
+      ? `<button class="btn act red" data-act="dconfirm" ${G.dsel.size ? '' : 'disabled'}>🗑️ Deitar fora${G.dsel.size ? ' (' + G.dsel.size + ')' : ''}</button><button class="btn act ghost" data-act="dcancel">Cancelar</button>`
+      : `<button class="btn act${G.hint?.type === 'discard' ? ' hint' : ''}" data-act="discard" ${myTurn && !G.busy ? '' : 'disabled'}>🗑️ Descartar</button>`}</div>`;
+  // estado
+  const st = $('#g-status');
+  if (s.winner !== null) st.innerHTML = 'Fim do jogo';
+  else if (myTurn) st.innerHTML = `<span class="your">É a tua vez!</span>`;
+  else st.innerHTML = `<span class="av-s">${ART.botFace(s.players[s.turn].face)}</span> ${esc(s.players[s.turn].name)} <span class="dots"><i></i><i></i><i></i></span>`;
+  const u = $('#b-undo'); if (u) u.disabled = !(myTurn && !G.busy && G.undo.length);
+}
+
+function promptHTML(T) {
+  const s = G.s;
+  if (s.winner !== null || s.turn !== 0) return '';
+  if (G.busy) return '';
+  if (G.discard) return 'Toca nas cartas que queres deitar fora.';
+  if (G.hint) return `💡 ${G.hintText || ''}`;
+  if (!G.sel) return G.cfg.tutorial ? 'Toca numa carta para a escolher. Mantém o dedo em cima para saberes o que faz.' : 'Toca numa carta para jogar.';
+  const card = s.players[0].hand.find(c => c.id === G.sel.cardId);
+  if (!card) return '';
+  if (!G.moves.length) return `<span class="warn">${whyNot(card)}</span>`;
+  const cor = card.c === 'multi' ? 'de qualquer cor' : TXT.adj[card.c];
+  if (card.t === 'organ') return `Toca no teu corpo para pores o ${TXT.organ[card.c]}.`;
+  if (card.t === 'virus') return `Toca num órgão ${cor} de um adversário.`;
+  if (card.t === 'med') return `Toca num órgão teu ${cor}.`;
+  switch (card.k) {
+    case 'transplant': case 'alien': return G.sel.first ? 'Agora toca no órgão de outro jogador para trocar.' : 'Toca no primeiro órgão que queres trocar.';
+    case 'thief': case 'cthief': return 'Toca no órgão que queres roubar.';
+    case 'error': return 'Toca no jogador com quem queres trocar de corpo.';
+  }
+  return `<button class="btn use" data-act="use">✨ Usar ${esc(shortName(card))}</button>`;
+}
+function whyNot(card) {
+  const me = G.s.players[0];
+  if (card.t === 'organ') return `Já tens um ${TXT.organ[card.c]}! Não podes ter dois iguais. Podes descartá-lo.`;
+  if (card.t === 'virus') return 'Nenhum adversário tem um órgão onde este vírus funcione.';
+  if (card.t === 'med') return me.body.length ? 'Nenhum dos teus órgãos precisa deste remédio.' : 'Ainda não tens órgãos para este remédio.';
+  if (card.k === 'ghost') return 'O monte de descarte está vazio.';
+  if (card.k === 'cthief' && ENG.hasColor(me.body, card.c)) return `Já tens um ${TXT.organ[card.c]}.`;
+  return 'Agora não dá para usar esta carta.';
+}
+
+/* ---------- Ciclo de jogo ---------- */
+function speed() { return SPEEDS[Prof.get()?.settings.speed || 'normal']; }
+
+async function runLoop() {
+  const tok = G.token;
+  if (G.running) return;
+  G.running = true;
+  try {
+    const s = G.s;
+    while (s.winner === null && tok === G.token) {
+      if (s.phase === 'start') {
+        const skipped = ENG.beginTurn(s);
+        for (const pi of skipped) {
+          addLog(pi === 0 ? '🧤 Não tinhas cartas e perdeste a vez.' : `🧤 ${esc(s.players[pi].name)} não tinha cartas e perdeu a vez.`);
+          if (pi === 0) toast('🧤 Não tinhas cartas: perdes esta vez e recebes cartas novas.');
+        }
+        render();
+        if (skipped.length) await sleep(speed().after);
+      }
+      const pi = s.turn;
+      if (s.players[pi].isHuman) {
+        G.busy = false;
+        saveGame();
+        render();
+        SFX.play('turn');
+        banner('É a tua vez!');
+        if (G.cfg.tutorial) setTimeout(() => { if (tok === G.token && G.s.turn === 0 && !G.busy) doHint(true); }, 900);
+        break;
+      }
+      G.busy = true;
+      render();
+      await sleep(speed().think);
+      while (G.paused && tok === G.token) await sleep(200);
+      if (tok !== G.token) break;
+      const mv = AI.choose(s, pi, s.players[pi].level);
+      await doMove(pi, mv);
+    }
+  } finally {
+    G.running = false;
+  }
+  if (tok !== G.token) { if ($('#game') && G.s && G.s.winner === null) runLoop(); return; }
+  if (G.s.winner !== null) endGame();
+}
+
+async function humanMove(mv) {
+  if (G.busy) return;
+  G.undo.push(JSON.stringify(G.s));
+  if (G.undo.length > 5) G.undo.shift();
+  G.sel = null; G.moves = []; G.hint = null; G.discard = false; G.dsel.clear();
+  await doMove(0, mv);
+  runLoop();
+}
+
+function rectOf(sel) { const e = typeof sel === 'string' ? $(sel) : sel; return e ? e.getBoundingClientRect() : null; }
+function rectMap() {
+  const m = new Map();
+  $$('#game [data-oid]').forEach(el => m.set(el.dataset.oid, el.getBoundingClientRect()));
+  $$('#hand [data-card]').forEach(el => m.set('h' + el.dataset.card, el.getBoundingClientRect()));
+  return m;
+}
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+async function flyCard(from, to, html, dur, delay = 0) {
+  if (!from || !to || reduced()) return;
+  const fx = $('#fx'); if (!fx) return;
+  const g = document.createElement('div');
+  g.className = 'flyer';
+  g.innerHTML = html;
+  const w = to.width, h = to.height;
+  g.style.cssText = `left:${to.left}px;top:${to.top}px;width:${w}px;height:${h}px;--w:${w}px`;
+  fx.appendChild(g);
+  const sx = from.width / w;
+  const a = g.animate([
+    { transform: `translate(${from.left - to.left}px,${from.top - to.top}px) scale(${sx})`, opacity: 1 },
+    { transform: `translate(${(from.left - to.left) * 0.4}px,${(from.top - to.top) * 0.4 - 40}px) scale(${(sx + 1) / 2 * 1.15}) rotate(-6deg)`, offset: 0.55 },
+    { transform: 'translate(0,0) scale(1)', opacity: 1 }
+  ], { duration: dur, delay, easing: 'cubic-bezier(.4,.1,.3,1)', fill: 'both' });
+  await a.finished.catch(() => { });
+  g.remove();
+}
+
+function flip(before, skip) {
+  if (reduced()) return;
+  $$('#game [data-oid]').forEach(el => {
+    const id = el.dataset.oid;
+    const r0 = before.get(id);
+    if (!r0) {
+      if (skip && skip.has(id)) return;
+      el.animate([{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(1.1)', opacity: 1, offset: 0.7 }, { transform: 'scale(1)' }], { duration: 420, easing: 'ease-out' });
+      return;
+    }
+    const r1 = el.getBoundingClientRect();
+    const dx = r0.left - r1.left, dy = r0.top - r1.top, sc = r0.width / r1.width;
+    if (Math.abs(dx) + Math.abs(dy) < 2 && Math.abs(sc - 1) < 0.02) return;
+    el.style.zIndex = 30;
+    el.style.transformOrigin = 'top left';
+    const a = el.animate([{ transform: `translate(${dx}px,${dy}px) scale(${sc})` }, { transform: 'none' }],
+      { duration: 650, easing: 'cubic-bezier(.5,0,.3,1)' });
+    a.onfinish = () => { el.style.zIndex = ''; };
+  });
+}
+
+function burst(r, text, color = '#ffcc1f', big) {
+  if (!r) return;
+  const fx = $('#fx'); if (!fx) return;
+  const b = document.createElement('div');
+  b.className = 'burst' + (big ? ' big' : '');
+  const pts = [];
+  for (let i = 0; i < 24; i++) {
+    const a = i / 24 * Math.PI * 2, rr = i % 2 ? 34 : 50;
+    pts.push((60 + Math.cos(a) * rr * 1.15).toFixed(1) + ',' + (50 + Math.sin(a) * rr * 0.8).toFixed(1));
+  }
+  b.innerHTML = `<svg viewBox="0 0 120 100"><polygon points="${pts.join(' ')}" fill="${color}" stroke="#1d1330" stroke-width="3" stroke-linejoin="round"/></svg><span>${text}</span>`;
+  b.style.left = (r.left + r.width / 2) + 'px';
+  b.style.top = (r.top + r.height / 2) + 'px';
+  fx.appendChild(b);
+  setTimeout(() => b.remove(), 1300);
+}
+function particles(r, colors, n = 14, spread = 70) {
+  if (!r || reduced()) return;
+  const fx = $('#fx'); if (!fx) return;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('i');
+    p.className = 'pt';
+    const size = 6 + Math.random() * 9;
+    p.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top + r.height / 2}px;width:${size}px;height:${size}px;background:${rnd(colors)}`;
+    fx.appendChild(p);
+    const a = Math.random() * Math.PI * 2, d = spread * (0.5 + Math.random());
+    p.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d + 30}px)) scale(.3)`, opacity: 0 }],
+      { duration: 700 + Math.random() * 400, easing: 'cubic-bezier(.2,.8,.4,1)' }).onfinish = () => p.remove();
+  }
+}
+function shakeEl(sel) { const e = typeof sel === 'string' ? $(sel) : sel; if (!e) return; e.classList.remove('shake'); void e.offsetWidth; e.classList.add('shake'); setTimeout(() => e.classList.remove('shake'), 600); }
+function banner(text) {
+  const fx = $('#fx'); if (!fx) return;
+  const b = document.createElement('div');
+  b.className = 'banner';
+  b.textContent = text;
+  fx.appendChild(b);
+  setTimeout(() => b.remove(), 1400);
+}
+async function bigCard(card, who) {
+  const fx = $('#fx'); if (!fx) return;
+  const d = document.createElement('div');
+  d.className = 'bigcard';
+  d.innerHTML = `<div class="bc-card">${cardHTML(card)}</div><div class="bc-t">${who}</div>`;
+  fx.appendChild(d);
+  await sleep(speed().big);
+  d.classList.add('out');
+  await sleep(250);
+  d.remove();
+}
+
+function addLog(t) {
+  G.s.log.push(t);
+  if (G.s.log.length > 80) G.s.log.shift();
+}
+const PCOL = { red: ['#ec4038', '#ff9a8f'], blue: ['#2f86e8', '#9fd0ff'], yellow: ['#f7c51c', '#fff08a'], green: ['#35b84b', '#aef59f'],
+  multi: ['#ec4038', '#f7c51c', '#35b84b', '#2f86e8', '#a24fd6'] };
+
+function describe(e) {
+  const s = G.s, P = s.players;
+  const who = pi => pi === 0 ? '' : esc(P[pi].name) + ' ';
+  const V = (pi, tu, ele) => pi === 0 ? cap(tu) : ele;
+  const own = (pi, tp, c) => tp === 0 ? (pi === 0 ? `o teu ${TXT.organ[c]}` : `o teu ${TXT.organ[c]}`) : (pi === tp ? `o seu ${TXT.organ[c]}` : `o ${TXT.organ[c]} de ${esc(P[tp].name)}`);
+  const orgC = oid => { const f = ENG.findSlot(s, oid); return f ? f.sl.organ.c : 'multi'; };
+  switch (e.e) {
+    case 'organ': return `🫀 ${who(e.p)}${V(e.p, 'colocaste', 'colocou')} um ${TXT.organ[e.card.c]}.`;
+    case 'infect': return `🦠 ${who(e.p)}${V(e.p, 'infetaste', 'infetou')} ${own(e.p, e.tp, orgC(e.oid))}!`;
+    case 'destroy': return `💥 ${who(e.p)}${V(e.p, 'destruíste', 'destruiu')} ${own(e.p, e.tp, e.organ.c)}!`;
+    case 'neutralize': return `⚡ ${who(e.p)}${V(e.p, 'tiraste', 'tirou')} a vacina d${own(e.p, e.tp, orgC(e.oid))}.`;
+    case 'cure': return `💊 ${who(e.p)}${V(e.p, 'curaste', 'curou')} ${own(e.p, e.p, orgC(e.oid))}.`;
+    case 'vaccinate': return `💉 ${who(e.p)}${V(e.p, 'vacinaste', 'vacinou')} ${own(e.p, e.p, orgC(e.oid))}.`;
+    case 'immune': return `🛡️ ${who(e.p)}${V(e.p, 'imunizaste', 'imunizou')} ${own(e.p, e.p, orgC(e.oid))}!`;
+    case 'transplant':
+      return `🔁 ${who(e.p)}${V(e.p, 'trocaste', 'trocou')} ${own(e.p, e.a.p, orgC(e.a.oid))} com ${own(e.p, e.b.p, orgC(e.b.oid))}.`;
+    case 'steal': return `🦝 ${who(e.p)}${V(e.p, 'roubaste', 'roubou')} ${own(e.p, e.tp, orgC(e.oid))}!`;
+    case 'contagion': return e.plan.length ? `🤧 ${who(e.p)}${V(e.p, 'espalhaste', 'espalhou')} ${e.plan.length} vírus!` : `🤧 ${who(e.p)}${V(e.p, 'usaste', 'usou')} Contágio, mas não havia onde pegar os vírus.`;
+    case 'glove': return `🧤 ${who(e.p)}${V(e.p, 'usaste', 'usou')} a Luva de Látex! Os outros perdem as cartas.`;
+    case 'error': return `🔄 ${who(e.p)}${V(e.p, 'trocaste', 'trocou')} de corpo ${e.tp === 0 ? 'contigo' : 'com ' + esc(P[e.tp].name)}!`;
+    case 'ghost': return `👻 ${who(e.p)}${V(e.p, 'foste', 'foi')} buscar uma carta ao descarte.`;
+    case 'sneeze': return `🤧 ${who(e.p)}${V(e.p, 'espirraste', 'espirrou')}! Todos passam as cartas ao seguinte.`;
+    case 'discard': return `🗑️ ${who(e.p)}${V(e.p, 'deitaste', 'deitou')} fora ${e.n} carta${e.n > 1 ? 's' : ''}.`;
+  }
+  return '';
+}
+
+async function doMove(pi, mv) {
+  const s = G.s, sp = speed();
+  G.busy = true;
+  render();
+  const player = s.players[pi];
+  const handSrc = id => pi === 0 ? rectOf(`#hand [data-card="${id}"]`) : rectOf(`[data-hand="${pi}"]`);
+  let skip = new Set();
+  if (mv.type === 'discard') {
+    SFX.play('card');
+    const dst = rectOf('[data-discard]');
+    await Promise.all(mv.cardIds.map((id, i) => {
+      const c = player.hand.find(x => x.id === id);
+      return flyCard(handSrc(id), dst, cardHTML(c), sp.fly, i * 90);
+    }));
+  } else {
+    const card = player.hand.find(c => c.id === mv.cardId);
+    let dst;
+    if (card.t === 'organ') { dst = rectOf(`[data-ph="${pi}-${card.c}"]`); skip.add(card.id); }
+    else if (card.t === 'virus' || card.t === 'med') dst = rectOf(`[data-oid="${mv.target.oid}"]`);
+    else dst = rectOf('[data-discard]');
+    SFX.play('card');
+    if (card.t === 'treat') {
+      await flyCard(handSrc(card.id), dst, cardHTML(card), sp.fly * 0.8);
+      await bigCard(card, pi === 0 ? `Usaste: <b>${esc(cardName(card))}</b>` : `${esc(player.name)} usou: <b>${esc(cardName(card))}</b>`);
+    } else {
+      await flyCard(handSrc(card.id), dst, cardHTML(card), sp.fly);
+    }
+  }
+  const before = rectMap();
+  const ev = ENG.applyEffect(s, pi, mv);
+  for (const e of ev) addLog(describe(e));
+  render();
+  flip(before, skip);
+  await effects(ev, before);
+  await sleep(sp.after);
+  // comprar cartas
+  const fin = ENG.finishTurn(s, pi, ev);
+  const deckR = rectOf('[data-deck]');
+  render();
+  if (fin.drawn.length) {
+    SFX.play('draw');
+    if (pi === 0) {
+      fin.drawn.forEach((id, i) => {
+        const el = $(`#hand [data-card="${id}"]`);
+        if (!el || !deckR || reduced()) return;
+        const r1 = el.getBoundingClientRect();
+        el.animate([{ transform: `translate(${deckR.left - r1.left}px,${deckR.top - r1.top}px) scale(${deckR.width / r1.width}) rotateY(90deg)` },
+          { transform: 'none' }], { duration: 420, delay: i * 90, easing: 'ease-out', fill: 'backwards' });
+      });
+    } else {
+      const to = rectOf(`[data-hand="${pi}"]`);
+      fin.drawn.forEach((_, i) => flyCard(deckR, to, backHTML(), 300, i * 80));
+    }
+    await sleep(pi === 0 ? 300 : 200);
+  }
+  saveGame();
+  return fin;
+}
+
+async function effects(ev, before) {
+  const s = G.s;
+  const at = oid => rectOf(`[data-oid="${oid}"]`) || before.get(oid);
+  for (const e of ev) {
+    const hitsMe = e.tp === 0 && e.p !== 0;
+    switch (e.e) {
+      case 'organ': SFX.play('organ'); particles(at(e.oid), PCOL[e.card.c], 10, 50); break;
+      case 'infect': {
+        SFX.play('infect'); const r = at(e.oid);
+        shakeEl(`[data-oid="${e.oid}"]`); particles(r, ['#7ddc4a', '#b6f26b', '#3f9e2a'], 16); burst(r, 'DOENTE!', '#9be34a');
+        if (hitsMe) buzz(120);
+        break;
+      }
+      case 'destroy': {
+        SFX.play('destroy'); const r = before.get(e.oid);
+        particles(r, PCOL[e.organ.c].concat(['#1d1330']), 26, 110); burst(r, 'POF!', '#ff6b4a', true);
+        if (hitsMe) buzz([80, 40, 160]);
+        break;
+      }
+      case 'neutralize': SFX.play('zap'); burst(at(e.oid), 'ZÁS!', '#ffe14a'); shakeEl(`[data-oid="${e.oid}"]`); break;
+      case 'cure': SFX.play('cure'); particles(at(e.oid), ['#fff', '#aef', '#ffe680'], 18); burst(at(e.oid), 'CURADO!', '#7fe0ff'); break;
+      case 'vaccinate': SFX.play('vax'); particles(at(e.oid), ['#fff', '#aef'], 10, 50); burst(at(e.oid), 'VACINADO!', '#bdf2ff'); break;
+      case 'immune': SFX.play('immune'); particles(at(e.oid), ['#ffcc1f', '#fff6b0', '#fff'], 24, 90); burst(at(e.oid), 'IMUNE!', '#ffcc1f', true); break;
+      case 'transplant': SFX.play('swoosh'); await sleep(250); burst(at(e.a.oid), 'TROCA!', '#c6a6ff'); burst(at(e.b.oid), 'TROCA!', '#c6a6ff'); break;
+      case 'steal': SFX.play('steal'); await sleep(250); burst(at(e.oid), 'ROUBADO!', '#ff9f43'); if (hitsMe) buzz(150); break;
+      case 'contagion':
+        SFX.play('infect');
+        await Promise.all(e.plan.map((m, i) => {
+          const f = before.get(m.from), t = at(m.to);
+          const v = ENG.findSlot(s, m.to)?.sl.mods[0];
+          return flyCard(f, t, v ? cardHTML(v, { mini: true }) : '', 500, i * 150).then(() => { particles(t, ['#7ddc4a', '#b6f26b'], 10); shakeEl(`[data-oid="${m.to}"]`); });
+        }));
+        if (e.plan.some(m => m.p === 0)) buzz(120);
+        break;
+      case 'glove': SFX.play('snap'); burst(rectOf('#opps'), 'SNAP!', '#9fdcff', true); break;
+      case 'error': SFX.play('wobble'); await sleep(200); burst(rectOf(`[data-body="${e.p}"]`), 'TROCA!', '#c6a6ff', true); break;
+      case 'ghost': SFX.play('ghost'); burst(rectOf('[data-discard]'), 'BUUU!', '#f3f3ff'); break;
+      case 'sneeze': SFX.play('sneeze'); burst(rectOf('#mid'), 'ATCHIM!', '#bdf2ff', true); break;
+      case 'discard': break;
+    }
+  }
+}
+
+/* ---------- Toques do jogador ---------- */
+function myTurnReady() { return G.s && G.s.turn === 0 && G.s.winner === null && !G.busy; }
+
+function onHandCard(id) {
+  if (!myTurnReady()) { if (G.s && G.s.turn !== 0) toast('Espera pela tua vez! ⏳', 1200); return; }
+  const card = G.s.players[0].hand.find(c => c.id === id); if (!card) return;
+  G.hint = null;
+  if (G.discard) {
+    G.dsel.has(id) ? G.dsel.delete(id) : G.dsel.add(id);
+    SFX.play('click'); render(); return;
+  }
+  if (G.sel?.cardId === id) { G.sel = null; G.moves = []; SFX.play('click'); render(); return; }
+  G.sel = { cardId: id };
+  G.moves = ENG.movesForCard(G.s, 0, card);
+  SFX.play(G.moves.length ? 'select' : 'nope');
+  render();
+  maybeTip(card);
+}
+function tipKey(c) { return c.t === 'treat' ? c.k : c.t === 'organ' && c.c === 'multi' ? 'organ-multi' : c.t; }
+function maybeTip(card) {
+  const p = Prof.get(); if (!p.settings.tips) return;
+  const k = tipKey(card); if (p.seen[k]) return;
+  p.seen[k] = 1; Store.save();
+  showCardInfo(card);
+}
+function onSlot(oid) {
+  if (!G.sel) return false;
+  if (!myTurnReady()) return true;
+  const card = G.s.players[0].hand.find(c => c.id === G.sel.cardId);
+  if (card.k === 'transplant' || card.k === 'alien') {
+    if (!G.sel.first) {
+      if (G.moves.some(m => m.target.a.oid === oid || m.target.b.oid === oid)) { G.sel.first = oid; SFX.play('select'); render(); }
+      else { SFX.play('nope'); shakeEl(`[data-oid="${oid}"]`); }
+      return true;
+    }
+    if (G.sel.first === oid) { G.sel.first = null; render(); return true; }
+    const m = G.moves.find(m => (m.target.a.oid === G.sel.first && m.target.b.oid === oid) || (m.target.b.oid === G.sel.first && m.target.a.oid === oid));
+    if (m) humanMove({ type: 'play', cardId: card.id, target: { a: { p: ENG.findSlot(G.s, G.sel.first).p, oid: G.sel.first }, b: { p: ENG.findSlot(G.s, oid).p, oid } } });
+    else { SFX.play('nope'); shakeEl(`[data-oid="${oid}"]`); }
+    return true;
+  }
+  const m = G.moves.find(m => m.target && m.target.oid === oid);
+  if (m) humanMove(m);
+  else if (card.t !== 'organ') { SFX.play('nope'); shakeEl(`[data-oid="${oid}"]`); }
+  else return false;
+  return true;
+}
+function onBody(pi) {
+  if (!G.sel || !myTurnReady()) return;
+  const card = G.s.players[0].hand.find(c => c.id === G.sel.cardId);
+  if (card.t === 'organ' && pi === 0) {
+    if (G.moves.length) humanMove(G.moves[0]);
+    else { SFX.play('nope'); shakeEl('#prompt'); }
+  }
+}
+function onOpp(pi) {
+  if (!G.sel || !myTurnReady()) return;
+  const m = G.moves.find(m => m.target && m.target.p === pi && !m.target.oid);
+  if (m) humanMove(m);
+}
+function doHint(auto) {
+  if (!myTurnReady()) return;
+  const mv = AI.choose(G.s, 0, 'hard');
+  G.hint = mv; G.sel = null; G.moves = []; G.discard = false; G.dsel.clear();
+  const s = G.s;
+  if (mv.type === 'discard') G.hintText = mv.cardIds.length > 1 ? 'Estas cartas não te servem agora. Descarta-as para receberes novas.' : 'Esta carta não te serve agora. Descarta-a.';
+  else {
+    const c = s.players[0].hand.find(x => x.id === mv.cardId);
+    const t = mv.target || {};
+    const P = s.players;
+    const org = oid => { const f = ENG.findSlot(s, oid); return f ? TXT.organ[f.sl.organ.c] : ''; };
+    if (c.t === 'organ') G.hintText = `Põe o ${TXT.organ[c.c]} no teu corpo.`;
+    else if (c.t === 'virus') G.hintText = `Ataca o ${org(t.oid)} de ${esc(P[t.p].name)} com o vírus!`;
+    else if (c.t === 'med') G.hintText = `Usa o remédio no teu ${org(t.oid)}.`;
+    else if (c.k === 'thief' || c.k === 'cthief') G.hintText = `Rouba o ${org(t.oid)} de ${esc(P[t.p].name)}!`;
+    else if (c.k === 'error') G.hintText = `Troca de corpo com ${esc(P[t.p].name)}!`;
+    else if (c.k === 'transplant' || c.k === 'alien') G.hintText = `Troca o ${org(t.a.oid)} com o ${org(t.b.oid)}.`;
+    else G.hintText = `Usa a carta ${esc(cardName(c))}!`;
+  }
+  if (!auto) SFX.play('select');
+  render();
+}
+
+/* ---------- Fim do jogo ---------- */
+function endGame() {
+  const s = G.s, p = Prof.get();
+  const won = s.winner === 0, me = s.players[0];
+  const cfg = G.cfg;
+  p.save = null;
+  const st = p.stats;
+  st.played++;
+  if (won) { st.wins++; st.streak++; st.best = Math.max(st.best, st.streak); if (!cfg.training) st.fastest = st.fastest ? Math.min(st.fastest, me.st.turns) : me.st.turns; }
+  else st.streak = 0;
+  const bl = st.byLevel[cfg.level]; bl.p++; if (won) bl.w++;
+  for (const k of Object.keys(st.tot)) st.tot[k] += me.st[k] || 0;
+  p.history.unshift({ d: Date.now(), won, n: cfg.nOpp, lvl: cfg.level, winner: s.players[s.winner].name, turns: me.st.turns, train: cfg.training });
+  p.history = p.history.slice(0, 60);
+  if (cfg.tutorial) p.tutorialDone = true;
+  const ctx = { won: won && !cfg.training, s, me, P: p, level: cfg.level, nOpp: cfg.nOpp, tutorial: cfg.tutorial };
+  const fresh = [];
+  for (const m of MEDALS) {
+    if (p.medals[m.id]) continue;
+    const trainingBlocks = cfg.training && ['first', 'wins10', 'wins50', 'normal', 'hard', 'five', 'clean', 'fast', 'streak3', 'comeback', 'error'].includes(m.id);
+    if (!trainingBlocks && m.ok(ctx)) { p.medals[m.id] = Date.now(); fresh.push(m); }
+  }
+  Store.save();
+  render();
+  setTimeout(() => {
+    SFX.play(won ? 'win' : 'lose');
+    if (won) confetti();
+    const w = s.players[s.winner];
+    modal(`<div class="end ${won ? 'won' : 'lost'}">
+      <div class="end-av">${won ? `<span>${me.avatar}</span>` : ART.botFace(w.face)}</div>
+      <h1>${won ? 'GANHASTE!' : 'Oh não!'}</h1>
+      <p>${won ? (cfg.training ? 'Muito bem! (jogo de treino)' : 'Salvaste o hospital! 🏥') : `${esc(w.name)} completou o corpo primeiro.`}</p>
+      <div class="end-body">${bodyHTML(w, -1, true, { slots: new Set(), opps: new Set() })}</div>
+      <div class="end-stats">
+        <span>🎯 ${pl(me.st.turns, 'jogada', 'jogadas')}</span><span>🦠 ${me.st.virus} vírus</span><span>💊 ${pl(me.st.cure + me.st.vaccinate + me.st.immune, 'remédio', 'remédios')}</span>${me.st.steal ? `<span>🦝 ${pl(me.st.steal, 'roubo', 'roubos')}</span>` : ''}
+      </div>
+      ${fresh.length ? `<div class="new-medals"><h3>Novas medalhas!</h3>${fresh.map(m => `<div class="nm"><span>${m.icon}</span><b>${m.name}</b></div>`).join('')}</div>` : ''}
+      <div class="modal-btns"><button class="btn ghost" data-act="menu">Menu</button><button class="btn primary" data-act="again">Jogar outra vez</button></div>
+    </div>`, 'sticky');
+    if (fresh.length) setTimeout(() => SFX.play('medal'), 900);
+  }, 700);
+}
+function confetti() {
+  if (reduced()) return;
+  const cols = ['#ec4038', '#2f86e8', '#f7c51c', '#35b84b', '#a24fd6', '#fff'];
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElement('i');
+    c.className = 'confetti';
+    c.style.cssText = `left:${Math.random() * 100}vw;background:${rnd(cols)};width:${6 + Math.random() * 8}px;height:${8 + Math.random() * 10}px`;
+    document.body.appendChild(c);
+    c.animate([{ transform: `translateY(-5vh) rotate(0)` }, { transform: `translateY(105vh) translateX(${(Math.random() - 0.5) * 30}vw) rotate(${Math.random() * 900}deg)` }],
+      { duration: 2200 + Math.random() * 1800, delay: Math.random() * 600, easing: 'cubic-bezier(.3,.2,.6,1)' }).onfinish = () => c.remove();
+  }
+}
+
+/* ---------- Tutorial ---------- */
+function tutorialIntro(done) {
+  const slides = [
+    { art: ['organ-red', 'organ-blue', 'organ-yellow', 'organ-green'], t: 'O hospital está cheio de vírus! 🦠', d: 'Ganha quem juntar primeiro <b>4 órgãos diferentes e saudáveis</b> no seu corpo.' },
+    { art: ['virus-green', 'organ-green-sick'], t: 'Ataca com vírus', d: 'Os vírus deixam os órgãos dos adversários doentes. Com dois vírus, o órgão é destruído!' },
+    { art: ['med-red', 'organ-red-immune'], t: 'Protege-te com remédios', d: 'Os remédios curam e vacinam os teus órgãos. Com dois remédios o órgão fica imune para sempre.' },
+    { art: ['treat-glove', 'treat-thief'], t: 'Usa tratamentos', d: 'São cartas especiais que roubam, trocam e baralham tudo! Mantém o dedo numa carta para saberes o que faz.' },
+    { art: [], t: 'Vamos jogar!', d: 'Neste jogo de treino eu dou-te dicas 💡. Faz o que o balão diz e toca nas cartas que brilham.' }
+  ];
+  let i = 0;
+  const mk = a => { const [t, c, m] = a.split('-'); return t === 'treat' ? cardHTML({ id: 'tu' + a, t, k: c }) : cardHTML({ id: 'tu' + a, t, c }, { mood: m }); };
+  const draw = () => {
+    const sl = slides[i];
+    modal(`<div class="tut">
+      <div class="tut-cards">${sl.art.map(mk).join('') || `<div class="tut-big">🎓</div>`}</div>
+      <h2>${sl.t}</h2><p>${sl.d}</p>
+      <div class="dots-nav">${slides.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="modal-btns">${i ? '<button class="btn ghost" id="tu-b">Voltar</button>' : '<button class="btn ghost" data-act="menu">Sair</button>'}<button class="btn primary" id="tu-n">${i === slides.length - 1 ? 'Começar!' : 'Seguinte →'}</button></div></div>`, 'sticky');
+    $('#tu-n').onclick = () => { SFX.play('click'); if (i === slides.length - 1) { closeModal(); done(); } else { i++; draw(); } };
+    const b = $('#tu-b'); if (b) b.onclick = () => { SFX.play('click'); i--; draw(); };
+  };
+  draw();
+}
+
+/* ---------- Eventos globais ---------- */
+let pressT = null, pressFired = false, pressStart = null;
+function findCardAnywhere(id) {
+  const s = G.s;
+  if (s) {
+    for (const p of s.players) {
+      const h = p.hand.find(c => c.id === id); if (h) return h;
+      for (const sl of p.body) { if (sl.organ.id === id) return sl.organ; const m = sl.mods.find(c => c.id === id); if (m) return m; }
+    }
+    const d = s.discard.find(c => c.id === id); if (d) return d;
+  }
+  return null;
+}
+function cardFromEl(el) {
+  const id = el.dataset.card;
+  const c = findCardAnywhere(id);
+  if (c) return c;
+  // cartas de exemplo (regras, definições)
+  const m = el.className.match(/t-(\w+) col-(\w+)/);
+  if (!m) return null;
+  const t = m[1], col = m[2];
+  const svgK = id.replace(/^(r|x|tu|d)/, '');
+  const kinds = ['cthief', 'transplant', 'thief', 'contagion', 'glove', 'error', 'alien', 'ghost', 'sneeze'];
+  const k = kinds.find(k => svgK.includes(k)) || null;
+  return { id, t, c: t === 'treat' ? (k === 'cthief' ? (['red', 'blue', 'yellow', 'green'].find(c => svgK.includes(c)) || 'red') : null) : col, k };
+}
+
+function bindGlobal() {
+  document.addEventListener('pointerdown', e => {
+    SFX.unlock();
+    const el = e.target.closest('.card[data-card]');
+    pressFired = false;
+    clearTimeout(pressT);
+    if (!el || el.closest('#modal') || el.classList.contains('back')) return;
+    pressStart = { x: e.clientX, y: e.clientY };
+    pressT = setTimeout(() => {
+      const c = cardFromEl(el);
+      if (c) { pressFired = true; showCardInfo(c); }
+    }, 480);
+  });
+  document.addEventListener('pointermove', e => {
+    if (pressStart && Math.hypot(e.clientX - pressStart.x, e.clientY - pressStart.y) > 12) clearTimeout(pressT);
+  });
+  document.addEventListener('pointerup', () => clearTimeout(pressT));
+  document.addEventListener('pointercancel', () => clearTimeout(pressT));
+  document.addEventListener('contextmenu', e => { if (e.target.closest('.card')) e.preventDefault(); });
+
+  document.addEventListener('click', e => {
+    if (pressFired) { pressFired = false; e.preventDefault(); e.stopPropagation(); return; }
+    const t = e.target;
+    const act = t.closest('[data-act]');
+    if (act && !act.disabled) { onAct(act.dataset.act, act, e); return; }
+    // ecrã de preparação e definições
+    const opp = t.closest('[data-opp]');
+    const inGame = !!t.closest('#game');
+    if (!inGame) {
+      const p = Prof.get();
+      if (opp && t.closest('#seg-opp')) { p.settings.opponents = +opp.dataset.opp; Store.save(); SFX.play('click'); screenSetup(); return; }
+      const lv = t.closest('[data-lv]'); if (lv) { p.settings.level = lv.dataset.lv; Store.save(); SFX.play('click'); screenSetup(); return; }
+      const sp = t.closest('[data-speed]'); if (sp) { p.settings.speed = sp.dataset.speed; Store.save(); SFX.play('click'); screenSettings(); return; }
+      return;
+    }
+    // no jogo
+    const hc = t.closest('#hand .card');
+    if (hc) { onHandCard(hc.dataset.card); return; }
+    const slot = t.closest('.slot');
+    if (slot && onSlot(slot.dataset.oid)) return;
+    const body = t.closest('.body.mine');
+    if (body) { onBody(0); return; }
+    if (opp) { onOpp(+opp.dataset.opp); return; }
+    if (t.closest('[data-discard]') && G.sel && myTurnReady()) {
+      const card = G.s.players[0].hand.find(c => c.id === G.sel.cardId);
+      if (card && G.moves.length && !G.moves[0].target?.oid && !G.moves[0].target?.p && card.t === 'treat' && !['transplant', 'alien', 'error', 'thief', 'cthief'].includes(card.k)) { humanMove(G.moves[0]); return; }
+    }
+  });
+  document.addEventListener('change', e => {
+    const p = Prof.get(); if (!p) return;
+    const x = e.target.dataset.extra;
+    if (x) { p.settings.extras[x] = e.target.checked; e.target.closest('.extra')?.classList.toggle('on', e.target.checked); Store.save(); SFX.play('click'); }
+    const sk = e.target.dataset.set;
+    if (sk) { p.settings[sk] = e.target.checked; Store.save(); if (sk === 'sound') SFX.set(e.target.checked); SFX.play('click'); }
+    if (e.target.id === 'set-train') { p.settings.training = e.target.checked; Store.save(); SFX.play('click'); }
+  });
+  let rt;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if ($('#game')) { layout(); render(); } }, 120); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+}
+
+let backTarget = 'menu';
+function onAct(a, el) {
+  const p = Prof.get();
+  if (a !== 'close') SFX.play('click');
+  switch (a) {
+    case 'pick': Prof.set(el.dataset.id); screenMenu(); break;
+    case 'newprof': profileForm(null); break;
+    case 'editprof': profileForm(p); break;
+    case 'profiles': screenProfiles(); break;
+    case 'menu': closeModal(); G.token++; screenMenu(); break;
+    case 'setup': screenSetup(); break;
+    case 'start': startGame(); break;
+    case 'resume': resumeGame(); break;
+    case 'tutorial': startGame({ tutorial: true }); break;
+    case 'rules': backTarget = 'menu'; screenRules(); break;
+    case 'back': if (backTarget === 'game') { enterGame(); } else screenMenu(); break;
+    case 'stats': screenStats(); break;
+    case 'medals': screenMedals(); break;
+    case 'settings': screenSettings(); break;
+    case 'close': closeModal(); break;
+    case 'again': closeModal(); startGame({ tutorial: false }); break;
+    case 'resettips': p.seen = {}; p.settings.tips = true; Store.save(); toast('As explicações vão voltar a aparecer. 👍'); screenSettings(); break;
+    case 'resetstats':
+      confirmBox('Apagar todas as estatísticas e medalhas de ' + esc(p.name) + '?', () => {
+        const fresh = newProfile(p.name, p.avatar, p.color);
+        p.stats = fresh.stats; p.history = []; p.medals = {}; Store.save(); toast('Estatísticas apagadas.'); screenSettings();
+      });
+      break;
+    case 'delprof':
+      confirmBox('Apagar o jogador ' + esc(p.name) + '? Isto não se pode desfazer.', () => {
+        Store.d.profiles = Store.d.profiles.filter(x => x.id !== p.id); Store.d.current = null; Store.save(); screenProfiles();
+      });
+      break;
+    // jogo
+    case 'pause':
+      G.paused = true;
+      modal(`<h2>Pausa ⏸️</h2><div class="menu-btns">
+        <button class="btn big primary" data-act="close">▶️ Continuar</button>
+        <button class="btn mid" data-act="grules">📖 Regras</button>
+        <button class="btn mid" data-act="restart">🔁 Recomeçar</button>
+        <button class="btn mid ghost" data-act="menu">🏠 Sair (o jogo fica guardado)</button></div>`);
+      G.paused = true;
+      break;
+    case 'grules': closeModal(); G.token++; backTarget = 'game'; screenRules(); break;
+    case 'restart': confirmBox('Recomeçar este jogo?', () => { G.token++; startGame({ tutorial: G.cfg.tutorial }); }); break;
+    case 'hint': doHint(false); break;
+    case 'undo':
+      if (G.undo.length && myTurnReady()) {
+        G.s = JSON.parse(G.undo.pop()); G.sel = null; G.hint = null; G.moves = [];
+        addLog('↶ Jogada desfeita.'); SFX.play('swoosh'); render(); saveGame();
+      }
+      break;
+    case 'sound': p.settings.sound = !p.settings.sound; SFX.set(p.settings.sound); Store.save(); el.textContent = p.settings.sound ? '🔊' : '🔇'; break;
+    case 'discard': if (myTurnReady()) { G.discard = true; G.sel = null; G.hint = null; G.dsel.clear(); render(); } break;
+    case 'dcancel': G.discard = false; G.dsel.clear(); render(); break;
+    case 'dconfirm': if (G.dsel.size && myTurnReady()) humanMove({ type: 'discard', cardIds: [...G.dsel] }); break;
+    case 'use': if (G.moves.length && myTurnReady()) humanMove(G.moves[0]); break;
+    case 'log':
+      modal(`<h2>O que aconteceu</h2><div class="loglist">${G.s.log.slice().reverse().map(l => `<p>${l}</p>`).join('') || '<p>Ainda nada.</p>'}</div><button class="btn primary wide" data-act="close">Fechar</button>`);
+      break;
+  }
+}
+function confirmBox(text, yes) {
+  modal(`<h2>Tens a certeza?</h2><p>${text}</p><div class="modal-btns"><button class="btn ghost" data-act="close">Não</button><button class="btn red" id="cf-yes">Sim</button></div>`);
+  $('#cf-yes').onclick = () => { closeModal(); yes(); };
+}
+
+/* ---------- Arranque ---------- */
+function boot() {
+  document.body.insertAdjacentHTML('afterbegin', ART.defs());
+  Store.load();
+  bindGlobal();
+  const p = Prof.get();
+  if (p) screenMenu(); else screenProfiles();
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => { });
+  }
+}
+document.addEventListener('DOMContentLoaded', boot);
+
+</script>
+</body>
+</html>

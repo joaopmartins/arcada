@@ -1,0 +1,306 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pokémon Defesa</title>
+<style>
+  :root{ --ac:#ffcb05; --az:#2a75bb; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; color:#fff; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(#12203f,#0a1226); min-height:100%; display:flex; flex-direction:column; align-items:center; padding:6px; overflow-x:hidden;}
+  h1{margin:2px 0; font-size:clamp(17px,4.6vw,26px); color:var(--ac); text-shadow:2px 2px 0 var(--az),3px 3px 0 #000;}
+  #hud{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:4px 0; font-size:clamp(12px,3.4vw,16px);}
+  .chip{background:rgba(0,0,0,.4); padding:5px 11px; border-radius:20px; font-weight:bold;}
+  button{font-family:inherit; font-weight:bold; font-size:clamp(12px,3.3vw,15px); padding:9px 12px; border:none; border-radius:11px;
+    cursor:pointer; background:var(--ac); color:#3a2b00; box-shadow:0 4px 0 #b8960f; touch-action:manipulation;}
+  button:active{transform:translateY(3px); box-shadow:0 1px 0 #b8960f;}
+  button.az{background:var(--az); color:#fff; box-shadow:0 4px 0 #1a4e7a;}
+  button.vd{background:#2ecc71; color:#053; box-shadow:0 4px 0 #1e8e50;}
+  button.rd{background:#e0574a; color:#fff; box-shadow:0 4px 0 #a5382d;}
+  button:disabled{opacity:.5; box-shadow:0 4px 0 #666;}
+  img{image-rendering:pixelated;}
+  #wrap{position:relative; width:min(97vw,720px);}
+  canvas{width:100%; height:auto; display:block; border:3px solid #0a1226; border-radius:10px; background:#3f9b46; box-shadow:0 10px 30px #0008; image-rendering:pixelated; touch-action:manipulation;}
+  #loja{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; width:min(97vw,720px); margin-top:8px;}
+  .tw{background:#ffffff14; border:3px solid #fff3; border-radius:12px; padding:6px 3px 4px; text-align:center; cursor:pointer; position:relative;}
+  .tw.on{border-color:var(--ac); background:#ffcb0522;}
+  .tw img{width:40px;height:40px;}
+  .tw .nm{font-size:11px; font-weight:bold;} .tw .ct{font-size:12px; color:var(--ac); font-weight:bold;}
+  .tw .tp{position:absolute; top:4px; right:4px; width:12px; height:12px; border-radius:50%;}
+  #abils{display:flex; gap:8px; margin-top:8px; justify-content:center; flex-wrap:wrap;}
+  #barra{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; justify-content:center;}
+  #painel{width:min(97vw,720px); margin-top:8px; background:#12224a; border:2px solid #fff3; border-radius:12px; padding:8px; display:none; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;}
+  #painel.on{display:flex;} #painel img{width:48px;height:48px;}
+  #dica{margin-top:8px; text-align:center; font-size:clamp(12px,3.2vw,15px); background:rgba(0,0,0,.4); padding:6px 12px; border-radius:11px; max-width:720px; min-height:1.3em;}
+  #modal{position:fixed; inset:0; background:#000b; display:none; align-items:center; justify-content:center; z-index:40; padding:18px;}
+  #modal.on{display:flex;}
+  #cx{background:#12224a; border:4px solid var(--ac); border-radius:18px; padding:22px; text-align:center; max-width:420px;}
+  #cx h2{margin:0 0 8px; font-size:clamp(22px,7vw,34px);} #cx p{font-size:clamp(14px,4vw,17px);}
+  .tela{position:fixed; inset:0; background:linear-gradient(#12203f,#0a1226); z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center; padding:18px; overflow:auto;}
+  .tela.on{display:flex;}
+  .niv{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; max-width:560px; width:100%; margin-top:12px;}
+  .nivC{background:#ffffff14; border:3px solid #fff4; border-radius:14px; padding:14px 12px; text-align:center; cursor:pointer;}
+  .nivC.lock{opacity:.45; cursor:not-allowed;}
+  .nivC .t{font-size:16px; font-weight:bold;} .nivC .b{font-size:12px; opacity:.85; margin-top:5px;}
+</style>
+
+<h1>🗼 Pokémon Defesa</h1>
+<div id="hud">
+  <span class="chip">💰 <b id="hDin">0</b></span>
+  <span class="chip">❤️ <b id="hVid">0</b></span>
+  <span class="chip">🌊 Ronda <b id="hRon">0</b></span>
+</div>
+<div id="wrap"><canvas id="cv"></canvas></div>
+
+<div id="loja"></div>
+<div id="painel"></div>
+<div id="abils">
+  <button class="az" id="btTrovao">⚡ Trovão</button>
+  <button class="az" id="btGelo">❄️ Congelar</button>
+</div>
+<div id="barra">
+  <button class="vd" id="btRonda">▶️ Começar ronda</button>
+  <button id="btVel">⏩ x1</button>
+  <button class="sec" id="btNiveis">🏠 Níveis</button>
+  <button class="sec" id="btAjuda">❓ Ajuda</button>
+</div>
+<div id="dica">Escolhe um Pokémon na loja (vê o que faz!) e toca no relvado para o pôr a defender.</div>
+
+<div id="niveis" class="tela">
+  <h1>🗼 Pokémon Defesa</h1>
+  <p style="opacity:.85; text-align:center; max-width:460px">Escolhe um nível — protege o caminho e não deixes os Pokémon selvagens chegar ao fim!</p>
+  <div class="niv" id="nivGrid"></div>
+</div>
+<div id="modal"><div id="cx"><h2 id="mTit"></h2><p id="mTxt"></p><button id="mBt"></button></div></div>
+
+<script>
+/* ===================== CONFIG ===================== */
+const COLS=15, ROWS=9, CELL=44, W=COLS*CELL, H=ROWS*CELL;
+const SPR = id => "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+id+".png";
+const CORT={Fogo:"#ff7043",Água:"#42a5f5",Planta:"#66bb6a","Elétrico":"#ffd600",Normal:"#bdbdbd","Psíquico":"#ec5a9d",Lutador:"#d84343"};
+/* torres: cada tipo tem ANIMAÇÃO própria (kind: proj/raio/soco) e um PAPEL diferente */
+const TORRES={
+ bul:{nome:"Bulbasaur",tipo:"Planta",custo:100,ids:[1,2,3],dmg:[10,18,32],alc:[2.6,2.9,3.3],rate:[820,700,600],up:[120,240],kind:"proj",pspd:16,desc:"🌿 Atira folhas rápidas. Barato, bom para começar."},
+ squ:{nome:"Squirtle",tipo:"Água",custo:120,ids:[7,8,9],dmg:[12,21,40],alc:[2.3,2.6,3.0],rate:[760,660,560],up:[140,270],kind:"proj",pspd:15,desc:"💧 Jato de água equilibrado, para tudo."},
+ char:{nome:"Charmander",tipo:"Fogo",custo:150,ids:[4,5,6],dmg:[16,26,46],alc:[2.4,2.7,3.1],rate:[780,680,580],up:[160,320],kind:"proj",pspd:14,splash:1.2,desc:"🔥 Bola de fogo com dano EM ÁREA (queima à volta)."},
+ pik:{nome:"Pikachu",tipo:"Elétrico",custo:160,ids:[25,26,26],dmg:[10,17,28],alc:[2.5,2.8,3.1],rate:[400,340,280],up:[170,330],kind:"raio",chain:[1,2,3],desc:"⚡ Relâmpago que SALTA entre vários inimigos."},
+ mac:{nome:"Machop",tipo:"Lutador",custo:170,ids:[66,67,68],dmg:[26,48,84],alc:[1.7,1.9,2.1],rate:[1150,1000,880],up:[190,360],kind:"soco",desc:"👊 SOCO muito forte, mas lento e de perto."},
+ pol:{nome:"Poliwag",tipo:"Água",custo:140,ids:[60,61,62],dmg:[7,12,20],alc:[2.4,2.7,3.0],rate:[720,640,560],up:[150,300],kind:"proj",pspd:14,slow:[.6,.5,.4],slowMs:[900,1100,1300],desc:"🐸 ABRANDA os inimigos que atinge (bolha)."},
+ kad:{nome:"Abra",tipo:"Psíquico",custo:200,ids:[63,64,65],dmg:[30,55,95],alc:[3.4,3.9,4.4],rate:[1300,1150,1000],up:[220,400],kind:"proj",pspd:22,desc:"🔮 SNIPER: alcance enorme e dano alto, mas lento."},
+ gee:{nome:"Geodude",tipo:"Normal",custo:190,ids:[74,75,76],dmg:[18,32,56],alc:[2.0,2.2,2.5],rate:[1400,1250,1100],up:[210,380],kind:"proj",pspd:11,splash:1.8,desc:"🪨 BOMBA: dano em ÁREA GRANDE, mas lento."},
+};
+const INIMIGOS=[{id:16,tipo:"Normal"},{id:19,tipo:"Normal"},{id:10,tipo:"Planta"},{id:43,tipo:"Planta"},
+                {id:60,tipo:"Água"},{id:58,tipo:"Fogo"},{id:100,tipo:"Elétrico"},{id:129,tipo:"Água"}];
+const BOSSES=[{id:143,tipo:"Normal"},{id:130,tipo:"Água"},{id:59,tipo:"Fogo"}];
+function tmult(a,d){ const s={Fogo:"Planta",Água:"Fogo",Planta:"Água","Elétrico":"Água"}; if(s[a]===d)return 1.7;
+  const w={Fogo:"Água",Água:"Planta",Planta:"Fogo"}; if(w[a]===d)return .6; return 1; }
+
+/* ===================== NÍVEIS ===================== */
+const L1=[[0,4],[1,4],[2,4],[3,4],[3,3],[3,2],[4,2],[5,2],[6,2],[6,3],[6,4],[6,5],[6,6],[7,6],[8,6],[9,6],[9,5],[9,4],[9,3],[9,2],[10,2],[11,2],[12,2],[12,3],[12,4],[12,5],[12,6],[13,6],[14,6]];
+const L2=[[0,1],[1,1],[2,1],[3,1],[4,1],[4,2],[4,3],[4,4],[3,4],[2,4],[2,5],[2,6],[2,7],[3,7],[4,7],[5,7],[6,7],[6,6],[6,5],[6,4],[7,4],[8,4],[8,3],[8,2],[9,2],[10,2],[11,2],[11,3],[11,4],[11,5],[11,6],[12,6],[13,6],[14,6]];
+const L3=[[0,7],[1,7],[2,7],[3,7],[3,6],[3,5],[3,4],[3,3],[3,2],[4,2],[5,2],[6,2],[7,2],[7,3],[7,4],[7,5],[7,6],[8,6],[9,6],[10,6],[10,5],[10,4],[10,3],[10,2],[11,2],[12,2],[12,3],[12,4],[12,5],[12,6],[12,7],[13,7],[14,7]];
+const L4=[[0,2],[1,2],[2,2],[2,3],[2,4],[2,5],[2,6],[3,6],[4,6],[4,5],[4,4],[4,3],[4,2],[5,2],[6,2],[6,3],[6,4],[6,5],[6,6],[7,6],[8,6],[8,5],[8,4],[8,3],[8,2],[9,2],[10,2],[10,3],[10,4],[10,5],[10,6],[11,6],[12,6],[12,5],[12,4],[12,3],[13,3],[14,3]];
+const L5=[[0,4],[1,4],[1,3],[1,2],[2,2],[3,2],[3,3],[3,4],[3,5],[3,6],[4,6],[5,6],[5,5],[5,4],[5,3],[5,2],[6,2],[7,2],[7,3],[7,4],[7,5],[7,6],[8,6],[9,6],[9,5],[9,4],[9,3],[9,2],[10,2],[11,2],[11,3],[11,4],[11,5],[11,6],[12,6],[13,6],[13,5],[13,4],[14,4]];
+const LEVELS=[
+ {nome:"Rota Relva",path:L1,dif:1.0,meta:12},{nome:"Floresta",path:L2,dif:1.4,meta:14},
+ {nome:"Montanha",path:L3,dif:1.9,meta:16},{nome:"Caverna",path:L4,dif:2.4,meta:18},{nome:"Liga Pokémon",path:L5,dif:3.0,meta:20},
+];
+let PATH,pathSet,WP,difMult=1,levelIdx=0,levelMeta=12;
+function setLevel(idx){ levelIdx=idx; const L=LEVELS[idx]; PATH=L.path; difMult=L.dif; levelMeta=L.meta;
+  pathSet=new Set(PATH.map(c=>c[0]+","+c[1])); WP=PATH.map(c=>({x:c[0]*CELL+CELL/2,y:c[1]*CELL+CELL/2})); }
+setLevel(0);
+
+/* ===================== ESTADO ===================== */
+let dinheiro=400,vidas=20,ronda=0,emRonda=false,vel=1;
+let inimigos=[],torres=[],projs=[],zaps=[],punches=[],parts=[],floats=[],fila=[],spawnT=0,selLoja=null,selTorre=null;
+let abilCd={t:0,g:0}; const ABIL={t:22000,g:28000}; let flashT=0,flashC="#fff",now=0;
+const $=s=>document.querySelector(s);
+const cv=$("#cv"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
+function onTap(el,fn){ if(!el)return; el.addEventListener('click',fn); el.addEventListener('touchend',function(e){e.preventDefault();fn.call(this,e);},{passive:false}); }
+
+/* ---- assets ---- */
+const imgs={}; function getImg(id){ if(!imgs[id]){ const im=new Image(); im.src=SPR(id); imgs[id]=im; } return imgs[id]; }
+[].concat(...Object.values(TORRES).map(t=>t.ids), INIMIGOS.map(e=>e.id), BOSSES.map(b=>b.id)).forEach(getImg);
+
+/* ---- som ---- */
+let actx; function beep(f,d,t,v){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();
+  o.type=t||"square";o.frequency.value=f;o.connect(g);g.connect(actx.destination);g.gain.setValueAtTime(v||.06,actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);o.start();o.stop(actx.currentTime+d);}catch(e){}}
+function sTiro(tp){ const m={Fogo:[150,.09,"sawtooth"],Água:[620,.05,"sine"],Planta:[430,.05,"triangle"],"Elétrico":[900,.05,"square"],"Psíquico":[780,.06,"sine"],Lutador:[170,.09,"square"],Normal:[300,.06,"square"]}[tp]||[400,.05]; beep(m[0],m[1],m[2],.05); }
+const sMorte=()=>beep(200,.12,"sawtooth",.08), sPoe=()=>beep(700,.09,"triangle"), sLeak=()=>beep(150,.2,"sawtooth",.11), sUp=()=>{beep(500,.1);setTimeout(()=>beep(760,.14),90);};
+document.addEventListener('pointerdown',()=>{try{if(actx&&actx.state==='suspended')actx.resume();}catch(e){}},{passive:true});
+
+/* ---- efeitos ---- */
+function spawnParts(x,y,cor,n){ for(let i=0;i<n;i++){ const a=Math.random()*7,v=1+Math.random()*3; parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1,life:480,cor,s:2+Math.random()*3}); } }
+function spawnFloat(x,y,txt,cor){ floats.push({x,y,txt,cor:cor||"#ffcb05",life:800}); }
+function flash(c){ flashC=c; flashT=280; }
+
+/* ===================== LOJA / PAINEL ===================== */
+function montarLoja(){ const L=$("#loja"); L.innerHTML="";
+  Object.keys(TORRES).forEach(k=>{ const t=TORRES[k]; const d=document.createElement('div'); d.className="tw"+(selLoja===k?" on":"");
+    d.innerHTML=`<span class="tp" style="background:${CORT[t.tipo]}"></span><img src="${SPR(t.ids[0])}"><div class="nm">${t.nome}</div><div class="ct">💰${t.custo}</div>`;
+    onTap(d,()=>{ selLoja=(selLoja===k?null:k); selTorre=null; fecharPainel(); montarLoja(); dica(selLoja?(t.desc+" — toca no relvado para o pôr."):"Escolhe um Pokémon."); });
+    L.appendChild(d); }); }
+function cellAt(e){ const r=cv.getBoundingClientRect(); return {col:Math.floor((e.clientX-r.left)*(cv.width/r.width)/CELL), row:Math.floor((e.clientY-r.top)*(cv.height/r.height)/CELL)}; }
+function torreEm(col,row){ return torres.find(t=>t.col===col&&t.row===row); }
+function clicarMapa(e){ e.preventDefault(); const {col,row}=cellAt(e); if(col<0||col>=COLS||row<0||row>=ROWS) return;
+  const jt=torreEm(col,row); if(jt){ selTorre=jt; selLoja=null; montarLoja(); abrirPainel(); return; }
+  if(pathSet.has(col+","+row)){ dica("Não podes construir no caminho!"); return; }
+  if(!selLoja){ selTorre=null; fecharPainel(); dica("Escolhe primeiro um Pokémon na loja."); return; }
+  const t=TORRES[selLoja]; if(dinheiro<t.custo){ dica("Sem dinheiro! Precisas de 💰"+t.custo+"."); return; }
+  dinheiro-=t.custo; torres.push({key:selLoja,col,row,x:col*CELL+CELL/2,y:row*CELL+CELL/2,nivel:0,cd:0,fa:0}); sPoe(); atualizaHUD(); dica("Boa! "+t.nome+" está a defender."); }
+cv.addEventListener('pointerdown',clicarMapa);
+function abrirPainel(){ const p=$("#painel"), t=selTorre, def=TORRES[t.key], id=def.ids[t.nivel]; p.classList.add("on");
+  p.innerHTML=`<img src="${SPR(id)}"><div style="max-width:230px"><b>${def.nome}</b> · nível ${t.nivel+1} <span style="color:${CORT[def.tipo]}">(${def.tipo})</span><br>
+    <span style="opacity:.85; font-size:12px">${def.desc}<br>dano ${def.dmg[t.nivel]} · alcance ${def.alc[t.nivel].toFixed(1)}</span></div>`;
+  const bw=document.createElement('div'); bw.style.cssText="display:flex;gap:8px;flex-wrap:wrap;justify-content:center";
+  if(t.nivel<2){ const c=def.up[t.nivel]; const e=document.createElement('button'); e.className="vd"; e.textContent="⬆️ Evoluir (💰"+c+")"; e.disabled=dinheiro<c; onTap(e,evoluir); bw.appendChild(e); }
+  const v=document.createElement('button'); v.className="rd"; v.textContent="💰 Vender (+"+vender(true)+")"; onTap(v,()=>vender(false)); bw.appendChild(v);
+  const f=document.createElement('button'); f.className="sec"; f.textContent="✖️"; onTap(f,()=>{selTorre=null;fecharPainel();}); bw.appendChild(f); p.appendChild(bw); }
+function fecharPainel(){ $("#painel").classList.remove("on"); }
+function evoluir(){ const t=selTorre,def=TORRES[t.key]; if(t.nivel>=2)return; const c=def.up[t.nivel]; if(dinheiro<c)return; dinheiro-=c; t.nivel++; sUp(); atualizaHUD(); abrirPainel(); dica(def.nome+" ficou mais forte!"); }
+function vender(so){ const t=selTorre,def=TORRES[t.key]; let g=def.custo; for(let i=0;i<t.nivel;i++)g+=def.up[i]; const val=Math.floor(g*0.6); if(so)return val;
+  dinheiro+=val; torres=torres.filter(x=>x!==t); selTorre=null; fecharPainel(); atualizaHUD(); dica("Vendido por 💰"+val+"."); }
+
+/* ===================== VAGAS ===================== */
+function comecarRonda(){ if(emRonda)return; ronda++; emRonda=true; fila=[]; spawnT=0;
+  const count=7+ronda*2, hpBase=Math.round(16*(1+(ronda-1)*0.32)*difMult), spd=Math.min(50+ronda*2,112);
+  for(let i=0;i<count;i++){ const e=INIMIGOS[Math.floor(Math.random()*INIMIGOS.length)];
+    fila.push({id:e.id,tipo:e.tipo,hp:hpBase,hpMax:hpBase,spd,reward:3+Math.floor(ronda/2),boss:false}); }
+  if(ronda%5===0){ const b=BOSSES[Math.floor(ronda/5-1)%BOSSES.length]; const bhp=Math.round(240*(1+(ronda-1)*0.28)*difMult);
+    fila.push({id:b.id,tipo:b.tipo,hp:bhp,hpMax:bhp,spd:40,reward:45,boss:true}); }
+  atualizaHUD(); $("#btRonda").disabled=true; dica("Ronda "+ronda+"/"+levelMeta+"! Aguenta!"); }
+function spawnar(dt){ if(!fila.length)return; spawnT-=dt; if(spawnT<=0){ const s=fila.shift(); inimigos.push({...s,x:WP[0].x,y:WP[0].y,wp:1,phase:Math.random()*6,slowT:0,slowF:1}); spawnT=Math.max(300,750-ronda*15); } }
+
+/* ===================== DANO / ATAQUES ===================== */
+function matar(m){ m.morto=true; m.dying=300; dinheiro+=m.reward; spawnParts(m.x,m.y,CORT[m.tipo]||"#fff",10); spawnFloat(m.x,m.y-14,"+"+m.reward); sMorte(); }
+function dano(m,base,tipo,slowF,slowMs){ if(!m||m.hp<=0)return; const ef=tmult(tipo,m.tipo); m.hp-=Math.max(1,Math.round(base*ef));
+  spawnParts(m.x,m.y,CORT[tipo]||"#fff",ef>1?6:3); if(slowF){ m.slowT=Math.max(m.slowT||0,slowMs); m.slowF=slowF; } if(m.hp<=0&&!m.morto) matar(m); }
+function disparar(t){ const def=TORRES[t.key], alc=def.alc[t.nivel]*CELL; let alvo=null,best=-1;
+  for(const m of inimigos){ if(m.hp<=0)continue; const d=Math.hypot(m.x-t.x,m.y-t.y); if(d<=alc){ const prog=m.wp*1000-d; if(prog>best){best=prog;alvo=m;} } }
+  if(!alvo) return; t.cd=def.rate[t.nivel]; t.fa=1; sTiro(def.tipo); const base=def.dmg[t.nivel];
+  if(def.kind==="raio"){ let cur=alvo, prev={x:t.x,y:t.y}, hits=new Set([cur]), dmgC=base, jumps=def.chain[t.nivel];
+    for(let j=0;j<=jumps;j++){ if(!cur)break; zaps.push({x1:prev.x,y1:prev.y,x2:cur.x,y2:cur.y,t:150}); dano(cur,dmgC,def.tipo); prev={x:cur.x,y:cur.y};
+      let nx=null,nd=1e9; for(const m of inimigos){ if(m.hp<=0||hits.has(m))continue; const d=Math.hypot(m.x-cur.x,m.y-cur.y); if(d<2.3*CELL&&d<nd){nd=d;nx=m;} } cur=nx; if(cur)hits.add(cur); dmgC=Math.round(dmgC*0.65); } }
+  else if(def.kind==="soco"){ punches.push({x:alvo.x,y:alvo.y,t:180}); dano(alvo,base,def.tipo); }
+  else { projs.push({x:t.x,y:t.y,target:alvo,tx:alvo.x,ty:alvo.y,pspd:def.pspd,base,tipo:def.tipo,splash:def.splash||0,slowF:def.slow?def.slow[t.nivel]:0,slowMs:def.slowMs?def.slowMs[t.nivel]:0,ang:Math.random()*6}); } }
+function impacto(p){ spawnParts(p.tx,p.ty,CORT[p.tipo],p.splash?12:5);
+  if(p.splash){ const R=p.splash*CELL; for(const m of inimigos){ if(m.hp<=0)continue; if(Math.hypot(m.x-p.tx,m.y-p.ty)<=R) dano(m,m===p.target?p.base:p.base*0.6,p.tipo,p.slowF,p.slowMs); }
+    zaps.push({ring:1,x:p.tx,y:p.ty,r:R,t:220,cor:CORT[p.tipo]}); }
+  else dano(p.target,p.base,p.tipo,p.slowF,p.slowMs); }
+
+/* ===================== PODERES ===================== */
+function trovao(){ if(abilCd.t>0)return; const d=40+ronda*5; for(const m of inimigos){ if(m.hp<=0)continue; zaps.push({x1:m.x,y1:0,x2:m.x,y2:m.y,t:180}); dano(m,d,"Elétrico"); } abilCd.t=ABIL.t; flash("#ffd600"); sUp(); dica("⚡ Trovão! Dano a TODOS os inimigos."); }
+function gelo(){ if(abilCd.g>0)return; for(const m of inimigos){ if(m.hp<=0)continue; m.slowT=3000; m.slowF=0; spawnParts(m.x,m.y,"#8fd8ff",4); } abilCd.g=ABIL.g; flash("#8fd8ff"); sUp(); dica("❄️ Congelaste todos os inimigos!"); }
+function updateAbil(){ const bt=$("#btTrovao"), bg=$("#btGelo");
+  bt.disabled=abilCd.t>0; bt.textContent=abilCd.t>0?("⚡ "+Math.ceil(abilCd.t/1000)+"s"):"⚡ Trovão";
+  bg.disabled=abilCd.g>0; bg.textContent=abilCd.g>0?("❄️ "+Math.ceil(abilCd.g/1000)+"s"):"❄️ Congelar"; }
+
+/* ===================== LOOP ===================== */
+let last=0;
+function loop(ts){ now=ts; const dt=Math.min(50,ts-last)*vel; last=ts; update(dt); render(); requestAnimationFrame(loop); }
+function update(dt){
+  if(abilCd.t>0) abilCd.t=Math.max(0,abilCd.t-dt); if(abilCd.g>0) abilCd.g=Math.max(0,abilCd.g-dt); updateAbil();
+  for(const p of parts){ p.x+=p.vx*dt/16; p.y+=p.vy*dt/16; p.vy+=0.16*dt/16; p.life-=dt; } parts=parts.filter(p=>p.life>0);
+  for(const f of floats){ f.y-=0.03*dt; f.life-=dt; } floats=floats.filter(f=>f.life>0);
+  for(const t of torres){ if(t.fa>0) t.fa=Math.max(0,t.fa-dt/150); }
+  for(const z of zaps) z.t-=dt; zaps=zaps.filter(z=>z.t>0);
+  for(const pu of punches) pu.t-=dt; punches=punches.filter(pu=>pu.t>0);
+  if(flashT>0) flashT=Math.max(0,flashT-dt);
+  // projéteis (sempre, para acabarem a animação)
+  for(const p of projs){ if(p.target&&p.target.hp>0){ p.tx=p.target.x; p.ty=p.target.y; }
+    const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy),mov=p.pspd*CELL*dt/1000; p.ang+=0.3;
+    if(d<=mov||d<2){ p.hit=true; impacto(p); } else { p.x+=dx/d*mov; p.y+=dy/d*mov; } }
+  projs=projs.filter(p=>!p.hit);
+
+  if(emRonda){ spawnar(dt);
+    for(const m of inimigos){ if(m.hp<=0)continue; if(m.slowT>0)m.slowT-=dt; const sp=m.spd*(m.slowT>0?m.slowF:1), a=WP[m.wp];
+      if(a){ const dx=a.x-m.x,dy=a.y-m.y,d=Math.hypot(dx,dy),mov=sp*dt/1000; if(d<=mov){m.x=a.x;m.y=a.y;m.wp++;} else {m.x+=dx/d*mov;m.y+=dy/d*mov;} }
+      if(m.wp>=WP.length) m.leak=true; }
+    for(const m of inimigos){ if(m.leak&&!m.contado){ m.contado=true; vidas-=m.boss?5:1; if(vidas<0)vidas=0; sLeak(); flash("#e0574a"); } }
+    inimigos=inimigos.filter(m=>!m.leak);
+    for(const t of torres){ t.cd-=dt; if(t.cd<=0) disparar(t); }
+    for(const m of inimigos){ if(m.hp<=0) m.dying=(m.dying||0)-dt; }
+    inimigos=inimigos.filter(m=>m.hp>0||(m.dying||0)>0);
+    if(!fila.length && !inimigos.some(m=>m.hp>0)){ emRonda=false; dinheiro+=20+ronda*3; $("#btRonda").disabled=false;
+      save.best[levelIdx]=Math.max(save.best[levelIdx]||0,ronda); gravarSave();
+      if(ronda>=levelMeta){ const prox=levelIdx+1<LEVELS.length; if(prox) save.desb=Math.min(LEVELS.length,Math.max(save.desb,levelIdx+2)); gravarSave();
+        modal("🏆 Nível completo!","Aguentaste "+levelMeta+" rondas!"+(prox?" Próximo nível desbloqueado! 🔓":" Terminaste tudo! 🎉"),"🏠 Menu",()=>{closeModal();mostrarNiveis();});
+      } else dica("Ronda "+ronda+" limpa! +💰"+(20+ronda*3)+". Constrói/evolui e segue ("+ronda+"/"+levelMeta+").");
+    }
+    if(vidas<=0){ emRonda=false; save.best[levelIdx]=Math.max(save.best[levelIdx]||0,ronda-1); gravarSave();
+      modal("💀 Fim de jogo","Chegaste à ronda "+ronda+"! Tenta outra vez.","🏠 Menu",()=>{closeModal();mostrarNiveis();}); }
+  }
+  atualizaHUD();
+}
+
+/* ===================== RENDER ===================== */
+function render(){
+  ctx.fillStyle="#5bbf5b"; ctx.fillRect(0,0,W,H);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ if((r+c)%2){ ctx.fillStyle="rgba(255,255,255,.045)"; ctx.fillRect(c*CELL,r*CELL,CELL,CELL);} }
+  ctx.strokeStyle="#c9a86a"; ctx.lineWidth=CELL*0.7; ctx.lineJoin="round"; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(WP[0].x,WP[0].y); for(let i=1;i<WP.length;i++) ctx.lineTo(WP[i].x,WP[i].y); ctx.stroke();
+  ctx.font="bold 20px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillStyle="#3a2b00";
+  ctx.fillText("▶",WP[0].x,WP[0].y); ctx.fillText("🏁",WP[WP.length-1].x,WP[WP.length-1].y);
+  if(selTorre){ const def=TORRES[selTorre.key]; ctx.fillStyle="rgba(255,255,255,.13)"; ctx.beginPath(); ctx.arc(selTorre.x,selTorre.y,def.alc[selTorre.nivel]*CELL,0,7); ctx.fill(); ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke(); }
+  // torres
+  for(const t of torres){ const def=TORRES[t.key], s=40*(1+0.22*(t.fa||0)); desenhaSprite(def.ids[t.nivel],t.x,t.y,s);
+    if(t.nivel>0){ ctx.fillStyle=CORT[def.tipo]; ctx.beginPath(); ctx.arc(t.x+14,t.y-14,7,0,7); ctx.fill(); ctx.fillStyle="#fff"; ctx.font="bold 11px sans-serif"; ctx.fillText(t.nivel+1,t.x+14,t.y-13); } }
+  // inimigos
+  for(const m of inimigos){ const dy=m.hp>0?Math.sin(now/150+m.phase)*2:0; const s=(m.boss?52:32)*(m.hp<=0?Math.max(0,(m.dying||0)/300):1);
+    if(m.slowT>0&&m.slowF===0){ ctx.fillStyle="rgba(140,216,255,.5)"; ctx.beginPath(); ctx.arc(m.x,m.y+dy,s*0.62,0,7); ctx.fill(); }
+    if(m.hp<=0) ctx.globalAlpha=Math.max(0,(m.dying||0)/300);
+    desenhaSprite(m.id,m.x,m.y+dy,s); ctx.globalAlpha=1;
+    if(m.hp>0){ const w=(m.boss?52:32)*0.9,hpp=Math.max(0,m.hp/m.hpMax); ctx.fillStyle="#000a"; ctx.fillRect(m.x-w/2,m.y-s/2-6,w,4);
+      ctx.fillStyle=hpp>.5?"#3cd070":hpp>.2?"#f2c000":"#e8613c"; ctx.fillRect(m.x-w/2,m.y-s/2-6,w*hpp,4); } }
+  // projéteis (animação por tipo)
+  for(const p of projs) desenhaProj(p);
+  // zaps / anéis (elétrico, área, trovão)
+  for(const z of zaps){ if(z.ring){ ctx.strokeStyle=z.cor||"#fff"; ctx.globalAlpha=z.t/220; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(z.x,z.y,z.r*(1-z.t/220+0.3),0,7); ctx.stroke(); ctx.globalAlpha=1; }
+    else { ctx.strokeStyle="rgba(255,235,80,"+(z.t/150)+")"; ctx.lineWidth=3; zig(z.x1,z.y1,z.x2,z.y2); } }
+  // socos
+  for(const pu of punches){ const k=1-pu.t/180; ctx.strokeStyle="rgba(255,255,255,"+(pu.t/180)+")"; ctx.lineWidth=3;
+    for(let i=0;i<6;i++){ const a=i/6*7; ctx.beginPath(); ctx.moveTo(pu.x+Math.cos(a)*6*k,pu.y+Math.sin(a)*6*k); ctx.lineTo(pu.x+Math.cos(a)*16*k,pu.y+Math.sin(a)*16*k); ctx.stroke(); } }
+  // partículas
+  for(const p of parts){ ctx.globalAlpha=Math.max(0,p.life/480); ctx.fillStyle=p.cor; ctx.beginPath(); ctx.arc(p.x,p.y,p.s,0,7); ctx.fill(); } ctx.globalAlpha=1;
+  // texto flutuante
+  ctx.font="bold 13px sans-serif"; for(const f of floats){ ctx.globalAlpha=Math.max(0,f.life/800); ctx.fillStyle=f.cor; ctx.fillText(f.txt,f.x,f.y); } ctx.globalAlpha=1;
+  // flash
+  if(flashT>0){ ctx.fillStyle=flashC; ctx.globalAlpha=flashT/280*0.35; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
+}
+function zig(x1,y1,x2,y2){ const n=4; ctx.beginPath(); ctx.moveTo(x1,y1); for(let i=1;i<n;i++){ const tt=i/n, mx=x1+(x2-x1)*tt+(Math.random()*10-5), my=y1+(y2-y1)*tt+(Math.random()*10-5); ctx.lineTo(mx,my);} ctx.lineTo(x2,y2); ctx.stroke(); }
+function desenhaProj(p){ const c=CORT[p.tipo];
+  if(p.tipo==="Planta"){ ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.ang); ctx.fillStyle=c; ctx.beginPath(); ctx.ellipse(0,0,7,3.5,0,0,7); ctx.fill(); ctx.restore(); }
+  else if(p.tipo==="Fogo"){ ctx.fillStyle="rgba(255,120,60,.5)"; ctx.beginPath(); ctx.arc(p.x,p.y,7,0,7); ctx.fill(); ctx.fillStyle="#ffd34d"; ctx.beginPath(); ctx.arc(p.x,p.y,4,0,7); ctx.fill(); }
+  else if(p.tipo==="Psíquico"){ ctx.fillStyle="rgba(236,90,157,.35)"; ctx.beginPath(); ctx.arc(p.x,p.y,9+Math.sin(now/80)*2,0,7); ctx.fill(); ctx.fillStyle=c; ctx.beginPath(); ctx.arc(p.x,p.y,5,0,7); ctx.fill(); }
+  else if(p.tipo==="Normal"){ ctx.fillStyle="#9c8b6b"; ctx.beginPath(); ctx.arc(p.x,p.y,6,0,7); ctx.fill(); ctx.strokeStyle="#6b5b3b"; ctx.lineWidth=2; ctx.stroke(); }
+  else { ctx.fillStyle="rgba(66,165,245,.5)"; ctx.beginPath(); ctx.arc(p.x,p.y,6,0,7); ctx.fill(); ctx.fillStyle="#bfe3ff"; ctx.beginPath(); ctx.arc(p.x,p.y,3,0,7); ctx.fill(); } }
+function desenhaSprite(id,x,y,s){ const im=getImg(id); if(im.complete&&im.naturalWidth>0) ctx.drawImage(im,x-s/2,y-s/2,s,s); else { ctx.fillStyle="#eee"; ctx.beginPath(); ctx.arc(x,y,s/2,0,7); ctx.fill(); } }
+
+/* ===================== NÍVEIS + GUARDAR ===================== */
+function lerSave(){ try{ const s=JSON.parse(localStorage.getItem('td_save')); if(s){ if(!s.best)s.best={}; if(!s.desb)s.desb=1; return s; } }catch(e){} return {desb:1,best:{}}; }
+let save=lerSave();
+function gravarSave(){ try{ localStorage.setItem('td_save',JSON.stringify(save)); }catch(e){} }
+function mostrarNiveis(){ renderNiveis(); $("#niveis").classList.add("on"); }
+function renderNiveis(){ const g=$("#nivGrid"); g.innerHTML="";
+  LEVELS.forEach((L,i)=>{ const ok=i<save.desb; const c=document.createElement('div'); c.className="nivC"+(ok?"":" lock"); const best=save.best[i]||0;
+    c.innerHTML=`<div class="t">${i+1}. ${L.nome}</div><div class="b">${ok?("🏅 Melhor: ronda "+best+"<br>Meta: "+L.meta):"🔒 Bloqueado"}</div>`;
+    if(ok) onTap(c,()=>{ $("#niveis").classList.remove("on"); iniciarNivel(i); }); g.appendChild(c); }); }
+function iniciarNivel(i){ setLevel(i); dinheiro=400; vidas=20; ronda=0; emRonda=false; vel=1; abilCd={t:0,g:0};
+  inimigos=[];torres=[];projs=[];zaps=[];punches=[];parts=[];floats=[];fila=[];selLoja=null;selTorre=null; fecharPainel(); montarLoja();
+  $("#btRonda").disabled=false; $("#btVel").textContent="⏩ x1"; atualizaHUD(); dica("Nível "+(i+1)+": "+LEVELS[i].nome+" — aguenta "+levelMeta+" rondas!"); }
+
+/* ===================== HUD / BOTÕES ===================== */
+function atualizaHUD(){ $("#hDin").textContent=dinheiro; $("#hVid").textContent=vidas; $("#hRon").textContent=ronda; }
+function dica(t){ $("#dica").textContent=t; }
+onTap($("#btRonda"),comecarRonda);
+onTap($("#btTrovao"),trovao); onTap($("#btGelo"),gelo);
+onTap($("#btNiveis"),()=>{ if(emRonda&&!confirm("Sair para os níveis? Perdes esta partida.")) return; emRonda=false; mostrarNiveis(); });
+onTap($("#btVel"),()=>{ vel=vel===1?2:vel===2?3:1; $("#btVel").textContent="⏩ x"+vel; });
+onTap($("#btAjuda"),()=>modal("Como jogar 🗼",
+  "1) Escolhe um Pokémon na loja — cada um faz algo diferente (área, cadeia, abrandar, sniper...).\n2) Toca no relvado (fora do caminho) para o pôr; ele dispara sozinho.\n3) Toca num Pokémon já posto para EVOLUIR ou vender.\n4) ⚡/❄️ = poderes especiais (têm de recarregar).\n5) Fogo>Planta, Água>Fogo, Planta>Água, Elétrico>Água.\n6) Não deixes os selvagens chegar ao 🏁!","👍",closeModal));
+let modalFn; function modal(t,x,b,fn){ $("#mTit").textContent=t; $("#mTxt").textContent=x; $("#mTxt").style.whiteSpace="pre-line"; $("#mBt").textContent=b; modalFn=fn; $("#modal").classList.add("on"); }
+function closeModal(){ $("#modal").classList.remove("on"); }
+onTap($("#mBt"),()=>{ if(modalFn)modalFn(); });
+
+montarLoja(); atualizaHUD(); requestAnimationFrame(loop); mostrarNiveis();
+</script>

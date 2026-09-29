@@ -1,0 +1,461 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Apanha & Batalha</title>
+<style>
+  :root{ --cell:40px; --ac:#ffcb05; --az:#2a75bb; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; color:#fff; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(#1d2b53,#0b132b); min-height:100%; display:flex; flex-direction:column; align-items:center; padding:8px; overflow-x:hidden;}
+  h1{margin:4px 0 2px; font-size:clamp(18px,5vw,28px); color:var(--ac); text-shadow:2px 2px 0 var(--az),3px 3px 0 #000;}
+  .sub{margin:0 0 6px; font-size:clamp(11px,3vw,13px); opacity:.8;}
+  button{font-family:inherit; font-weight:bold; font-size:clamp(13px,3.6vw,16px); padding:11px 15px; border:none; border-radius:12px;
+    cursor:pointer; background:var(--ac); color:#3a2b00; box-shadow:0 4px 0 #b8960f; touch-action:manipulation;}
+  button:active{transform:translateY(3px); box-shadow:0 1px 0 #b8960f;}
+  button.sec{background:#e8eef7; color:#123; box-shadow:0 4px 0 #9fb0c8;}
+  button.az{background:var(--az); color:#fff; box-shadow:0 4px 0 #1a4e7a;}
+  button.vd{background:#2ecc71; color:#053; box-shadow:0 4px 0 #1e8e50;}
+  button:disabled{opacity:.5; box-shadow:0 4px 0 #666;}
+  img{image-rendering:pixelated;}
+
+  #hud{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; margin-bottom:6px; font-size:clamp(12px,3.3vw,15px);}
+  .chip{background:rgba(0,0,0,.35); padding:5px 11px; border-radius:20px; font-weight:bold;}
+  .chip b{color:var(--ac);}
+
+  #mapa{position:relative;}
+  #grelha{display:grid; border:4px solid #123; border-radius:10px; overflow:hidden; box-shadow:0 10px 30px #0008;}
+  .t{width:var(--cell); height:var(--cell); position:relative; display:flex; align-items:center; justify-content:center; font-size:calc(var(--cell)*.5);}
+  .t.caminho{background:#c9b787;} .t.relva{background:#5bbf5b;} .t.relva::after{content:"🌿"; opacity:.55;}
+  .t.arvore{background:#2f7d32;} .t.arvore::after{content:"🌳"; font-size:calc(var(--cell)*.6);}
+  .t.agua{background:#4aa3df;} .t.agua::after{content:"🌊"; opacity:.8;}
+  .t.centro{background:#e85b5b;} .t.centro::after{content:"🏥"; font-size:calc(var(--cell)*.56);}
+  .t.campeao{background:#7a5cc0;} .t.campeao::after{content:"⭐"; font-size:calc(var(--cell)*.6);}
+  #treinador{position:absolute; width:var(--cell); height:var(--cell); left:0; top:0; z-index:3; pointer-events:none;
+    transition:transform .12s linear; display:flex; align-items:center; justify-content:center; filter:drop-shadow(0 2px 1px #0008);}
+  #treinador img{width:112%; height:112%; object-fit:contain;}
+  #dpad{display:grid; grid-template-columns:repeat(3,58px); grid-template-rows:repeat(3,50px); gap:6px; margin:12px auto 0; justify-content:center;}
+  #dpad button{padding:0; font-size:22px;} #dpad .vazio{visibility:hidden;}
+  #mapacima{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; justify-content:center;}
+
+  #batalha{position:fixed; inset:0; background:linear-gradient(#7ec0ee,#3a7d3a 62%); display:none; flex-direction:column; z-index:20; padding:10px;}
+  #batalha.on{display:flex;}
+  .campo{flex:1; position:relative; max-width:640px; width:100%; margin:0 auto;}
+  .lado{position:absolute; display:flex; flex-direction:column; align-items:center; width:44%;}
+  .lado.inimigo{right:2%; top:4%;} .lado.meu{left:2%; bottom:2%;}
+  .barra{background:#123; border:2px solid #fff; border-radius:10px; padding:5px 8px; width:100%; max-width:230px; box-shadow:0 3px 6px #0005;}
+  .barra .nm{font-size:clamp(12px,3.4vw,15px); font-weight:bold; display:flex; justify-content:space-between; gap:6px;}
+  .barra .hpwrap{background:#333; border-radius:6px; height:11px; margin-top:4px; overflow:hidden;}
+  .barra .hp{height:100%; background:#3cd070; transition:width .4s, background .3s;}
+  .barra .hpnum{font-size:11px; text-align:right; margin-top:1px; opacity:.85;}
+  .spr{width:clamp(110px,32vw,190px); height:clamp(110px,32vw,190px); object-fit:contain; margin-top:4px;}
+  .tipo{font-size:11px; padding:1px 7px; border-radius:10px; font-weight:bold; color:#fff;}
+  .hit{animation:hit .3s;} @keyframes hit{0%,100%{transform:translate(0,0)}25%{transform:translate(-8px,4px)}75%{transform:translate(8px,-4px)}}
+  .faint{animation:faint .6s forwards;} @keyframes faint{to{transform:translateY(30px);opacity:0}}
+  #bolaAnim{position:absolute; font-size:34px; left:20%; bottom:20%; display:none; z-index:5;}
+  #menuB{background:#123a; border:3px solid #fff; border-radius:14px; padding:10px; max-width:640px; width:100%; margin:0 auto;}
+  #msgB{min-height:2.4em; font-size:clamp(14px,4vw,18px); font-weight:bold; text-align:center; margin-bottom:8px; text-shadow:1px 1px 0 #000;}
+  #acoes{display:grid; grid-template-columns:1fr 1fr; gap:8px;} #acoes button{width:100%;}
+  #acoes button.super{background:#2ecc71; color:#053; box-shadow:0 4px 0 #1e8e50;}
+  #acoes button.fraco{background:#e0857a; color:#3a0f0a; box-shadow:0 4px 0 #a85043;}
+
+  .tela{position:fixed; inset:0; background:linear-gradient(#1d2b53,#0b132b); z-index:30; display:none; flex-direction:column; align-items:center; padding:16px; overflow:auto;}
+  .tela.on{display:flex;}
+  .grelhaP{display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:10px; max-width:660px; width:100%; margin:8px auto;}
+  .cartaP{background:#ffffff14; border:3px solid #fff3; border-radius:14px; padding:8px; text-align:center; cursor:pointer;}
+  .cartaP.sel{border-color:var(--ac); background:#ffcb0522;}
+  .cartaP img{width:72px; height:72px;}
+  .cartaP .nm{font-size:12px; font-weight:bold; margin-top:2px;} .cartaP .vazio2{opacity:.35;}
+  .secH{grid-column:1/-1; font-weight:bold; margin-top:10px; opacity:.92; font-size:13px; text-align:left;}
+  .cartaP .mini{display:flex; gap:5px; justify-content:center; margin-top:5px;}
+  .cartaP .mini button{padding:4px 9px; font-size:13px; box-shadow:none; border-radius:8px;}
+
+  #modal{position:fixed; inset:0; background:#000b; display:none; align-items:center; justify-content:center; z-index:40; padding:18px;}
+  #modal.on{display:flex;}
+  #cx{background:#12224a; border:4px solid var(--ac); border-radius:18px; padding:22px; text-align:center; max-width:440px; animation:pop .3s;}
+  #cx h2{margin:0 0 8px; font-size:clamp(20px,6vw,32px);} #cx p{font-size:clamp(14px,4vw,17px);} #cx img{width:130px;height:130px;}
+  @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  .oculto{display:none!important;}
+</style>
+
+<h1>⚡ Apanha &amp; Batalha</h1>
+<div class="sub" id="sub">Apanha Pokémon na relva e forma a tua equipa!</div>
+<div id="hud" class="oculto">
+  <span class="chip">🎒 Equipa <b id="hEquipa">0</b>/6</span>
+  <span class="chip">📕 Pokédex <b id="hDex">0</b>/<span id="hMeta">12</span></span>
+  <span class="chip" id="hAtivo">—</span>
+</div>
+
+<div id="mapa" class="oculto">
+  <div id="grelha"></div>
+  <div id="treinador"></div>
+  <div id="dpad">
+    <span class="vazio"></span><button data-d="c">⬆️</button><span class="vazio"></span>
+    <button data-d="e">⬅️</button><span class="vazio"></span><button data-d="d">➡️</button>
+    <span class="vazio"></span><button data-d="b">⬇️</button><span class="vazio"></span>
+  </div>
+  <div id="mapacima">
+    <button class="sec" id="btDex">📕 Pokédex</button>
+    <button class="sec" id="btEquipa">🎒 Equipa</button>
+    <button class="sec" id="btMenu">🏠 Menu</button>
+  </div>
+</div>
+
+<div id="batalha">
+  <div class="campo">
+    <div class="lado inimigo">
+      <div class="barra"><div class="nm"><span id="iNome"></span><span class="tipo" id="iTipo"></span></div>
+        <div class="hpwrap"><div class="hp" id="iHp"></div></div></div>
+      <img class="spr" id="iSpr" alt="">
+    </div>
+    <div id="bolaAnim">🔴</div>
+    <div class="lado meu">
+      <img class="spr" id="mSpr" alt="">
+      <div class="barra"><div class="nm"><span id="mNome"></span><span class="tipo" id="mTipo"></span></div>
+        <div class="hpwrap"><div class="hp" id="mHp"></div></div><div class="hpnum" id="mHpN"></div></div>
+    </div>
+  </div>
+  <div id="menuB"><div id="msgB"></div><div id="acoes"></div></div>
+</div>
+
+<div id="inicio" class="tela on">
+  <h1>⚡ Apanha &amp; Batalha</h1>
+  <div id="continuar"></div>
+  <p style="text-align:center;max-width:460px" id="txtInicio">Escolhe o teu Pokémon — tens os 20 mais famosos!</p>
+  <div class="grelhaP" id="starters"></div>
+</div>
+
+<div id="colecao" class="tela">
+  <h1 id="colTit">📕 Pokédex</h1>
+  <div class="grelhaP" id="colGrid"></div>
+  <button id="btVoltar">⬅️ Voltar ao mapa</button>
+</div>
+
+<div id="modal"><div id="cx"><h2 id="mTit"></h2><div id="mImg"></div><p id="mTxt"></p><button id="mBt"></button></div></div>
+
+<script>
+/* ============ DADOS ============ */
+const SPR = id => "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+id+".png";
+const SPRB= id => "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/"+id+".png";
+const CORTIPO={Fogo:"#e8613c",Água:"#4aa3df",Planta:"#4caf50","Elétrico":"#f2c000",Normal:"#9aa0a6","Psíquico":"#e0559a",
+  "Dragão":"#6f5bd0",Lutador:"#c0392b",Fantasma:"#6a4a9c"};
+const DEX=[
+ {id:1,nome:"Bulbasaur",tipo:"Planta",hp:60,mv:[["Chicote de Vinha","Planta",26],["Placagem","Normal",18]],peso:5},
+ {id:2,nome:"Ivysaur",tipo:"Planta",hp:84,mv:[["Folha Navalha","Planta",32],["Placagem","Normal",20]],peso:2},
+ {id:3,nome:"Venusaur",tipo:"Planta",hp:118,mv:[["Folha Navalha","Planta",42],["Placagem","Normal",24]],peso:1},
+ {id:4,nome:"Charmander",tipo:"Fogo",hp:58,mv:[["Brasa","Fogo",26],["Arranhão","Normal",18]],peso:5},
+ {id:5,nome:"Charmeleon",tipo:"Fogo",hp:82,mv:[["Brasa","Fogo",32],["Garra","Normal",20]],peso:2},
+ {id:6,nome:"Charizard",tipo:"Fogo",hp:116,mv:[["Lança-Chamas","Fogo",42],["Garra","Normal",26]],peso:1},
+ {id:7,nome:"Squirtle",tipo:"Água",hp:60,mv:[["Jato de Água","Água",26],["Placagem","Normal",18]],peso:5},
+ {id:8,nome:"Wartortle",tipo:"Água",hp:84,mv:[["Jato de Água","Água",32],["Placagem","Normal",20]],peso:2},
+ {id:9,nome:"Blastoise",tipo:"Água",hp:118,mv:[["Hidrocanhão","Água",42],["Placagem","Normal",24]],peso:1},
+ {id:10,nome:"Caterpie",tipo:"Planta",hp:42,mv:[["Fio de Seda","Planta",14],["Investida","Normal",12]],peso:8},
+ {id:16,nome:"Pidgey",tipo:"Normal",hp:46,mv:[["Ataque Rápido","Normal",20],["Investida","Normal",16]],peso:8},
+ {id:25,nome:"Pikachu",tipo:"Elétrico",hp:55,mv:[["Trovão","Elétrico",30],["Placagem","Normal",18]],peso:6},
+ {id:39,nome:"Jigglypuff",tipo:"Normal",hp:74,mv:[["Bofetada","Normal",18],["Placagem","Normal",16]],peso:5},
+ {id:52,nome:"Meowth",tipo:"Normal",hp:50,mv:[["Arranhão","Normal",20],["Mordida","Normal",18]],peso:6},
+ {id:54,nome:"Psyduck",tipo:"Água",hp:54,mv:[["Jato de Água","Água",22],["Arranhão","Normal",16]],peso:6},
+ {id:55,nome:"Golduck",tipo:"Água",hp:104,mv:[["Surf","Água",38],["Arranhão","Normal",22]],peso:2},
+ {id:59,nome:"Arcanine",tipo:"Fogo",hp:120,mv:[["Chama","Fogo",40],["Mordida","Normal",26]],peso:2},
+ {id:68,nome:"Machamp",tipo:"Lutador",hp:108,mv:[["Soco Dinâmico","Lutador",38],["Placagem","Normal",24]],peso:2},
+ {id:94,nome:"Gengar",tipo:"Fantasma",hp:66,mv:[["Bola Sombria","Fantasma",34],["Lambida","Normal",18]],peso:2},
+ {id:129,nome:"Magikarp",tipo:"Água",hp:30,mv:[["Salpico","Água",5],["Investida","Normal",8]],peso:8},
+ {id:130,nome:"Gyarados",tipo:"Água",hp:124,mv:[["Hidrobomba","Água",42],["Mordida","Normal",26]],peso:2},
+ {id:131,nome:"Lapras",tipo:"Água",hp:120,mv:[["Surf","Água",38],["Placagem","Normal",24]],peso:2},
+ {id:133,nome:"Eevee",tipo:"Normal",hp:58,mv:[["Investida","Normal",24],["Mordida","Normal",20]],peso:5},
+ {id:143,nome:"Snorlax",tipo:"Normal",hp:145,mv:[["Corpo Pesado","Normal",34],["Bocejo","Normal",20]],peso:2},
+ {id:149,nome:"Dragonite",tipo:"Dragão",hp:130,mv:[["Fúria do Dragão","Dragão",42],["Mordida","Normal",26]],peso:1},
+ {id:150,nome:"Mewtwo",tipo:"Psíquico",hp:150,mv:[["Psíquico","Psíquico",48],["Confusão","Psíquico",30]],peso:0},
+ {id:151,nome:"Mew",tipo:"Psíquico",hp:120,mv:[["Psíquico","Psíquico",38],["Investida","Normal",22]],peso:0},
+ {id:448,nome:"Lucario",tipo:"Lutador",hp:100,mv:[["Aura Esfera","Lutador",38],["Golpe","Normal",24]],peso:1},
+ {id:658,nome:"Greninja",tipo:"Água",hp:96,mv:[["Shuriken de Água","Água",38],["Corte","Normal",24]],peso:1},
+];
+const byId=id=>DEX.find(p=>p.id===id);
+// 20 mais famosos para escolher no início:
+const STARTERS=[25,6,4,1,7,133,150,151,143,94,130,149,448,658,131,39,52,54,68,129];
+const EVO={1:{para:2,aos:3},2:{para:3,aos:5},4:{para:5,aos:3},5:{para:6,aos:5},7:{para:8,aos:3},8:{para:9,aos:5},129:{para:130,aos:4},54:{para:55,aos:3}};
+const CAMPEAO=[130,59,150]; // Gyarados, Arcanine, Mewtwo
+const META=12;
+const EF={
+ Fogo:{Planta:2,Água:.5,Fogo:.5}, Água:{Fogo:2,Planta:.5,Água:.5},
+ Planta:{Água:2,Fogo:.5,Planta:.5}, "Elétrico":{Água:2,Planta:.5,"Elétrico":.5},
+ "Psíquico":{Lutador:2,"Psíquico":.5}, Lutador:{Normal:2,"Psíquico":.5}, Fantasma:{"Psíquico":2}, Normal:{}, "Dragão":{}
+};
+const mult=(a,d)=>(EF[a]&&EF[a][d])||1;
+
+/* ============ MEGA-MUNDO (secções geradas por semente) ============ */
+const SEC_ROWS=9, SEC_COLS=13, WROWS=3, WCOLS=3, MIDR=SEC_ROWS>>1, MIDC=SEC_COLS>>1;
+const ROWS=SEC_ROWS, COLS=SEC_COLS;
+const LEG={A:"arvore",".":"caminho",G:"relva",W:"agua",C:"centro",E:"campeao"};
+const bloqueio=ch=>ch==="A"||ch==="W";
+const NOMES=[["Prado Inicial","Bosque Verde","Costa Azul"],
+             ["Gruta Sombria","Planície Central","Rio Corrente"],
+             ["Monte Alto","Dunas Douradas","🏆 Liga Pokémon"]];
+let WORLD=[], secAtual={sr:0,sc:0};
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let mrng=Math.random;
+function gerarMundo(seed){ mrng=mulberry32(seed>>>0); WORLD=[];
+  for(let sr=0;sr<WROWS;sr++){ WORLD[sr]=[]; for(let sc=0;sc<WCOLS;sc++) WORLD[sr][sc]=gerarSeccao(sr,sc); } }
+function gerarSeccao(sr,sc){
+  const R=SEC_ROWS,C=SEC_COLS,g=[];
+  for(let r=0;r<R;r++){ g[r]=[]; for(let c=0;c<C;c++) g[r][c]=(r===0||r===R-1||c===0||c===C-1)?'A':'.'; }
+  if(sr>0) g[0][MIDC]='.'; if(sr<WROWS-1) g[R-1][MIDC]='.'; if(sc>0) g[MIDR][0]='.'; if(sc<WCOLS-1) g[MIDR][C-1]='.';
+  for(let r=1;r<R-1;r++) g[r][MIDC]='.'; for(let c=1;c<C-1;c++) g[MIDR][c]='.';        // cruz de caminho liga os portões
+  for(let r=1;r<R-1;r++)for(let c=1;c<C-1;c++){ if(g[r][c]==='.'&&r!==MIDR&&c!==MIDC&&mrng()<0.4) g[r][c]='G'; }
+  const wr=2+Math.floor(mrng()*(R-4)), wc=2+Math.floor(mrng()*(C-5));               // lago pequeno
+  for(let dr=0;dr<2;dr++)for(let dc=0;dc<2;dc++){ const r=wr+dr,c=wc+dc; if(r>0&&r<R-1&&c>0&&c<C-1&&r!==MIDR&&c!==MIDC) g[r][c]='W'; }
+  g[1][1]='C';                                                                       // Centro Pokémon em todas
+  if(sr===WROWS-1&&sc===WCOLS-1) g[R-2][C-2]='E';                                     // Campeão na última secção
+  return g.map(row=>row.join(''));
+}
+const grid=()=>WORLD[secAtual.sr][secAtual.sc];
+
+/* ============ ESTADO ============ */
+let equipa=[], caixa=[], ativo=0, dex=new Set(), pos={r:MIDR,c:2}, campeaoFeito=false, seed=0;
+let batalhando=false, wild=null, podeAgir=false, cellPx=40, modo="selvagem", champFila=[];
+
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function onTap(el,fn){ if(!el)return; el.addEventListener('click',fn); el.addEventListener('touchend',function(e){e.preventDefault();fn.call(this,e);},{passive:false}); }
+const rnd=(a,b)=>a+Math.random()*(b-a);
+
+/* ---- som ---- */
+let actx;
+function beep(f,d,t,v){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();
+  o.type=t||"square";o.frequency.value=f;o.connect(g);g.connect(actx.destination);g.gain.setValueAtTime(v||.13,actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);o.start();o.stop(actx.currentTime+d);}catch(e){}}
+const sHit=()=>beep(180,.1,"square"); const sSuper=()=>{beep(300,.08);setTimeout(()=>beep(500,.12),70);};
+const sFraco=()=>beep(140,.14,"sine",.1); const sFaint=()=>{beep(300,.15,"sawtooth");setTimeout(()=>beep(160,.3,"sawtooth"),140);};
+const sBola=()=>beep(420,.08,"triangle"); const sApanha=()=>[[523,0],[659,120],[880,240],[1175,380]].forEach(a=>setTimeout(()=>beep(a[0],.16,"square"),a[1]));
+const sCura=()=>[[600,0],[800,110]].forEach(a=>setTimeout(()=>beep(a[0],.14,"sine",.12),a[1]));
+const sEvo=()=>[[500,0],[660,140],[820,280],[1050,440]].forEach(a=>setTimeout(()=>beep(a[0],.2,"triangle"),a[1]));
+document.addEventListener('pointerdown',()=>{try{if(actx&&actx.state==='suspended')actx.resume();}catch(e){}},{passive:true});
+
+/* ============ GUARDAR ============ */
+const serP=p=>({id:p.id,hp:p.hp,hpMax:p.hpMax,pe:p.pe||0,pePassivo:p.pePassivo||0});
+function salvar(){ try{ localStorage.setItem('poke_save', JSON.stringify({
+  seed, secAtual, equipa:equipa.map(serP), caixa:caixa.map(serP), ativo, dex:[...dex], pos, campeaoFeito })); }catch(e){} }
+function lerSave(){ try{ const s=localStorage.getItem('poke_save'); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function apagarSave(){ try{ localStorage.removeItem('poke_save'); }catch(e){} }
+
+/* ============ RESPONSIVO ============ */
+function fit(){
+  const maxW=Math.min(window.innerWidth-12, 640);
+  const maxH=Math.max(160, window.innerHeight-290);
+  cellPx=Math.round(clamp(Math.min(maxW/COLS, maxH/ROWS), 20, 52));
+  document.documentElement.style.setProperty('--cell',cellPx+'px');
+}
+window.addEventListener('resize',()=>{fit();posTreinador();});
+
+/* ============ CRIAR / EVOLUIR ============ */
+function criar(id, selvagem){ const b=byId(id); const hp=selvagem? Math.round(b.hp*rnd(.8,1.02)) : b.hp;
+  return {id, nome:b.nome, tipo:b.tipo, hpMax:hp, hp:hp, mv:b.mv, pe:0, pePassivo:0}; }
+// pontos de evolução (pe): em combate na equipa = +1 (máx 4 passivos); quem dá o KO = +1.5 (50% mais rápido)
+function ganharPE(koMember){ equipa.forEach(p=>{
+  if(p===koMember) p.pe=(p.pe||0)+1.5;
+  else if((p.pePassivo||0)<4){ p.pe=(p.pe||0)+1; p.pePassivo=(p.pePassivo||0)+1; }
+}); }
+function tentarEvoluir(p, cb){
+  const e=EVO[p.id];
+  if(e && (p.pe||0)>=e.aos){ const nb=byId(e.para); const antigo=p.nome;
+    p.id=e.para; p.nome=nb.nome; p.tipo=nb.tipo; p.hpMax=nb.hp; p.hp=nb.hp; p.mv=nb.mv; p.pe=0; p.pePassivo=0;
+    sEvo(); atualizaTreinador(); salvar();
+    modal("✨ Evolução!", SPR(p.id), antigo+" evoluiu para "+p.nome+"!", "Fixe!", ()=>{closeModal(); if(cb)cb();}); return true; }
+  return false;
+}
+function evoluirTodos(cb){ for(const p of equipa){ if(tentarEvoluir(p, ()=>evoluirTodos(cb))) return; } if(cb) cb(); }
+
+/* ============ MAPA ============ */
+function desenharMapa(){
+  const g=$("#grelha"); g.style.gridTemplateColumns=`repeat(${COLS},var(--cell))`; g.innerHTML="";
+  const M=grid();
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ const d=document.createElement('div'); d.className="t "+LEG[M[r][c]]; g.appendChild(d); }
+  atualizaTreinador(); posTreinador(); $("#sub").textContent="📍 "+NOMES[secAtual.sr][secAtual.sc]+"  ("+(secAtual.sc+1)+","+(secAtual.sr+1)+")";
+}
+function atualizaTreinador(){ const a=equipa[ativo]; if(a) $("#treinador").innerHTML=`<img src="${SPR(a.id)}" alt="">`; }
+function posTreinador(){ $("#treinador").style.transform=`translate(${pos.c*cellPx}px,${pos.r*cellPx}px)`; }
+function mudarSeccao(dsr,dsc,nr,nc){ secAtual={sr:secAtual.sr+dsr,sc:secAtual.sc+dsc}; pos={r:nr,c:nc}; desenharMapa(); salvar(); }
+function mover(d){
+  if(batalhando) return;
+  let {r,c}=pos; if(d==='c')r--; else if(d==='b')r++; else if(d==='e')c--; else if(d==='d')c++;
+  // passar para a secção seguinte pelo portão (borda, no meio)
+  if(r<0){ if(secAtual.sr>0 && pos.c===MIDC) mudarSeccao(-1,0,SEC_ROWS-2,MIDC); return; }
+  if(r>=SEC_ROWS){ if(secAtual.sr<WROWS-1 && pos.c===MIDC) mudarSeccao(1,0,1,MIDC); return; }
+  if(c<0){ if(secAtual.sc>0 && pos.r===MIDR) mudarSeccao(0,-1,MIDR,SEC_COLS-2); return; }
+  if(c>=SEC_COLS){ if(secAtual.sc<WCOLS-1 && pos.r===MIDR) mudarSeccao(0,1,MIDR,1); return; }
+  const ch=grid()[r][c]; if(bloqueio(ch)) return;
+  pos={r,c}; posTreinador(); salvar();
+  if(ch==='C'){ curarEquipa(); return; }
+  if(ch==='E'){ desafiarCampeao(); return; }
+  if(ch==='G' && Math.random()<0.32){ setTimeout(iniciarBatalha, 140); }
+}
+function curarEquipa(){ if(equipa.every(p=>p.hp>=p.hpMax)) return; equipa.forEach(p=>p.hp=p.hpMax); sCura(); atualizaHUD(); salvar();
+  modal("🏥 Centro Pokémon","","A tua equipa está curada e cheia de energia!","OK",closeModal); }
+
+function atualizaHUD(){ $("#hEquipa").textContent=equipa.length; $("#hDex").textContent=dex.size; $("#hMeta").textContent=META;
+  const a=equipa[ativo]; $("#hAtivo").textContent = a? ("⭐ "+a.nome+" "+a.hp+"/"+a.hpMax) : "—"; }
+
+/* ============ BATALHA ============ */
+function pesoWild(){ const pool=DEX.filter(p=>p.peso>0); const tot=pool.reduce((s,p)=>s+p.peso,0); let x=Math.random()*tot;
+  for(const p of pool){ x-=p.peso; if(x<=0) return p.id; } return 16; }
+function iniciarBatalha(){ modo="selvagem"; wild=criar(pesoWild(), true); abrirBatalha("Um "+wild.nome+" selvagem apareceu!"); }
+function desafiarCampeao(){
+  if(campeaoFeito){ modal("⭐ Campeão","","Já és o Campeão! Queres desafiar outra vez?","Batalhar!",()=>{closeModal();arrancarCampeao();}); return; }
+  modal("⭐ Desafio do Campeão!", "", "3 Pokémon poderosos à tua espera! Não podes apanhá-los. Preparado?","Batalhar!",()=>{closeModal();arrancarCampeao();});
+}
+function arrancarCampeao(){ modo="campeao"; champFila=CAMPEAO.slice(); wild=criar(champFila.shift(), false);
+  abrirBatalha("O Campeão envia "+wild.nome+"!"); }
+function abrirBatalha(txt){ batalhando=true; $("#batalha").classList.add("on"); desenharBatalha(); msg(txt); setTimeout(menuPrincipal, 900); }
+function spriteAtivo(){ return equipa[ativo]; }
+function desenharBatalha(){
+  const me=spriteAtivo();
+  $("#iNome").textContent=wild.nome; $("#iTipo").textContent=wild.tipo; $("#iTipo").style.background=CORTIPO[wild.tipo]||"#777";
+  $("#iSpr").src=SPR(wild.id); $("#iSpr").className="spr";
+  $("#mNome").textContent=me.nome; $("#mTipo").textContent=me.tipo; $("#mTipo").style.background=CORTIPO[me.tipo]||"#777";
+  $("#mSpr").src=SPRB(me.id); $("#mSpr").onerror=function(){this.onerror=null;this.src=SPR(me.id);}; $("#mSpr").className="spr";
+  barras();
+}
+function barras(){ const me=spriteAtivo(); const iw=Math.max(0,wild.hp/wild.hpMax*100), mw=Math.max(0,me.hp/me.hpMax*100);
+  const cor=w=>w>50?"#3cd070":w>20?"#f2c000":"#e8613c";
+  $("#iHp").style.width=iw+"%"; $("#iHp").style.background=cor(iw);
+  $("#mHp").style.width=mw+"%"; $("#mHp").style.background=cor(mw); $("#mHpN").textContent=me.hp+"/"+me.hpMax; }
+function msg(t){ $("#msgB").textContent=t; }
+function acoes(lista){ const a=$("#acoes"); a.innerHTML=""; lista.forEach(([txt,cls,fn])=>{ const b=document.createElement('button'); b.textContent=txt; if(cls)b.className=cls; onTap(b,fn); a.appendChild(b); }); }
+function menuPrincipal(){ podeAgir=true;
+  const bola = modo==='campeao' ? ["🔴 Pokébola","az",()=>msg("Não podes apanhar o Pokémon do Campeão!")] : ["🔴 Pokébola","az",lancarBola];
+  acoes([["⚔️ Atacar","",menuAtaques], bola, ["🔄 Trocar","sec",()=>menuTrocar(false)], ["🏃 Fugir","sec",fugir]]);
+  msg("O que vais fazer?"); }
+function menuAtaques(){ if(!podeAgir)return; const me=spriteAtivo();
+  const lista=me.mv.map(m=>{ const ef=mult(m[1],wild.tipo); const sym=ef>=2?" 💥":ef<1?" 🛡️":""; const cls=ef>=2?"super":ef<1?"fraco":"";
+    return [m[0]+" ("+m[1]+")"+sym, cls, ()=>usarAtaque(m)]; });
+  lista.push(["⬅️ Voltar","sec",menuPrincipal]); acoes(lista); msg("Escolhe o ataque — 💥 super eficaz, 🛡️ pouco eficaz"); }
+function efeitoTxt(m){ return m>=2?" Super eficaz! 💥":m<1?" Pouco eficaz…":""; }
+function usarAtaque(m){
+  if(!podeAgir)return; podeAgir=false; const me=spriteAtivo(); const ef=mult(m[1],wild.tipo);
+  const dano=Math.max(1,Math.round(m[2]*ef*rnd(.85,1))); wild.hp=Math.max(0,wild.hp-dano);
+  $("#iSpr").classList.add("hit"); ef>=2?sSuper():ef<1?sFraco():sHit(); setTimeout(()=>$("#iSpr").classList.remove("hit"),300);
+  barras(); msg(me.nome+" usou "+m[0]+"!"+efeitoTxt(ef));
+  if(wild.hp<=0){ $("#iSpr").classList.add("faint"); sFaint(); ganharPE(me);
+    setTimeout(()=>{ if(modo==='campeao') proximoCampeao(); else { dex.add(wild.id); salvar();
+      modal("💫 "+wild.nome+" desmaiou!", SPR(wild.id), "Boa vitória! (para o apanhares, enfraquece-o e usa a Pokébola.)","Continuar",()=>{closeModal(); posBatalha();}); } },700);
+    return; }
+  setTimeout(turnoInimigo, 800);
+}
+function turnoInimigo(){
+  const me=spriteAtivo(); const m=wild.mv[Math.floor(Math.random()*wild.mv.length)]; const ef=mult(m[1],me.tipo);
+  const fator = modo==='campeao'?1:0.8;                 // mais fácil contra selvagens
+  const dano=Math.max(1,Math.round(m[2]*ef*fator*rnd(.85,1))); me.hp=Math.max(0,me.hp-dano);
+  $("#mSpr").classList.add("hit"); ef>=2?sSuper():ef<1?sFraco():sHit(); setTimeout(()=>$("#mSpr").classList.remove("hit"),300);
+  barras(); atualizaHUD(); msg(wild.nome+" usou "+m[0]+"!"+efeitoTxt(ef));
+  if(me.hp<=0){ $("#mSpr").classList.add("faint"); sFaint(); setTimeout(desmaiouMeu,700); return; }
+  setTimeout(menuPrincipal, 900);
+}
+function posBatalha(){ // depois de derrotar selvagem: verifica evoluções de toda a equipa
+  evoluirTodos(fimBatalha);
+}
+function proximoCampeao(){
+  if(champFila.length){ wild=criar(champFila.shift(), false); desenharBatalha();
+    modal("⭐ Próximo!", SPR(wild.id), "O Campeão envia "+wild.nome+"!","Continuar",()=>{closeModal(); msg(wild.nome+" entrou!"); setTimeout(menuPrincipal,600);}); }
+  else { campeaoFeito=true; salvar(); modal("🏆 ÉS O CAMPEÃO!","", "Derrotaste os 3 Pokémon do Campeão! És uma lenda, treinador!","🎉 Boa!",()=>{closeModal(); fimBatalha();}); }
+}
+function desmaiouMeu(){ $("#mSpr").classList.remove("faint"); const vivos=equipa.filter(p=>p.hp>0);
+  if(vivos.length===0){ modal("😵 Sem Pokémon!","","A tua equipa desmaiou. Vais ao Centro Pokémon curar.","OK",()=>{closeModal();blackout();}); return; }
+  msg(spriteAtivo().nome+" desmaiou! Escolhe outro."); menuTrocar(true); }
+function blackout(){ equipa.forEach(p=>p.hp=p.hpMax); ativo=equipa.findIndex(p=>p.hp>0); if(ativo<0)ativo=0;
+  modo="selvagem"; champFila=[]; fimBatalha(); pos={r:1,c:1}; atualizaTreinador(); posTreinador(); sCura(); salvar(); }
+function menuTrocar(obrig){ const a=$("#acoes"); a.innerHTML="";
+  equipa.forEach((p,i)=>{ const b=document.createElement('button'); b.textContent=(i===ativo?"⭐ ":"")+p.nome+" "+p.hp+"/"+p.hpMax;
+    if(p.hp<=0)b.disabled=true; b.className="sec"; onTap(b,()=>trocar(i,obrig)); a.appendChild(b); });
+  if(!obrig){ const v=document.createElement('button'); v.textContent="⬅️ Voltar"; v.className="sec"; onTap(v,menuPrincipal); a.appendChild(v); }
+  msg("Escolhe o teu Pokémon:"); }
+function trocar(i,obrig){ if(equipa[i].hp<=0) return; const troca=i!==ativo; ativo=i; desenharBatalha(); atualizaHUD(); atualizaTreinador(); salvar();
+  if(obrig){ podeAgir=true; setTimeout(menuPrincipal,300); }
+  else if(troca){ podeAgir=false; msg("Vai, "+spriteAtivo().nome+"!"); setTimeout(turnoInimigo,700); }
+  else menuPrincipal(); }
+function lancarBola(){ if(!podeAgir)return; podeAgir=false;
+  const ch=clamp(0.25 + (1-wild.hp/wild.hpMax)*0.7, .08,.95); const b=$("#bolaAnim"); b.style.display="block"; sBola();
+  b.animate([{transform:"translate(0,0) rotate(0)"},{transform:"translate(180px,-90px) rotate(360deg)"}],{duration:500,easing:"ease-out"});
+  msg("Atiraste uma Pokébola!");
+  setTimeout(()=>{ b.style.display="none"; if(Math.random()<ch){ apanhado(); }
+    else { msg(wild.nome+" escapou! ("+Math.round(ch*100)+"%)"); setTimeout(turnoInimigo,800); } }, 650); }
+function apanhado(){ sApanha(); dex.add(wild.id); ganharPE(null);   // captura = participação para a equipa
+  const novo=criar(wild.id,false); novo.hp=wild.hp>0?wild.hp:novo.hpMax;
+  let txt; if(equipa.length<6){ equipa.push(novo); txt="Juntou-se à tua equipa!"; } else { caixa.push(novo); txt="Equipa cheia — foi para a caixa 📦 (troca no 🎒)."; }
+  atualizaHUD(); salvar();
+  modal("🎉 Apanhaste "+wild.nome+"!", SPR(wild.id), txt+(dex.size>=META?" 🏆 Já tens "+dex.size+" na Pokédex!":""),"Boa!",
+    ()=>{closeModal(); evoluirTodos(()=>{ fimBatalha(); if(dex.size===META) setTimeout(()=>modal("🏆 PARABÉNS!","","Apanhaste "+META+" Pokémon! Agora tenta o Campeão ⭐ no mapa!","Continuar",closeModal),300); });}); }
+function fugir(){ if(!podeAgir)return; if(modo==='campeao'){ msg("Não podes fugir do Campeão!"); return; }
+  podeAgir=false; msg("Fugiste!"); setTimeout(fimBatalha,450); }
+function fimBatalha(){ $("#batalha").classList.remove("on"); batalhando=false; wild=null; modo="selvagem"; atualizaHUD(); salvar(); }
+
+/* ============ COLEÇÃO ============ */
+function abrirColecao(tipo){ $("#colecao").classList.add("on"); const g=$("#colGrid"); g.innerHTML="";
+  if(tipo==='equipa'){ $("#colTit").textContent="🎒 Equipa & Caixa";
+    const h1=document.createElement('div'); h1.className="secH"; h1.textContent="A tua equipa ("+equipa.length+"/6) — ⭐ líder · 📦 guardar"; g.appendChild(h1);
+    equipa.forEach((p,i)=>{ const c=document.createElement('div'); c.className="cartaP"+(i===ativo?" sel":"");
+      c.innerHTML=`<img src="${SPR(p.id)}"><div class="nm">${p.nome}${i===ativo?' ⭐':''}</div><div class="nm" style="opacity:.8">${p.hp}/${p.hpMax}</div>
+        <div class="mini"><button class="ln vd">⭐ Líder</button>${equipa.length>1?'<button class="gd">📦 Tirar</button>':''}</div>`;
+      onTap(c.querySelector('.ln'),()=>{ativo=i;atualizaHUD();atualizaTreinador();salvar();abrirColecao('equipa');});
+      const gd=c.querySelector('.gd'); if(gd) onTap(gd,()=>guardar(i));
+      g.appendChild(c); });
+    const h2=document.createElement('div'); h2.className="secH"; h2.textContent="📦 Guardados ("+caixa.length+") — carrega em ➕ para pôr na equipa"; g.appendChild(h2);
+    if(!caixa.length){ const e=document.createElement('div'); e.className="secH"; e.style.opacity=".6"; e.style.fontWeight="normal"; e.textContent="(vazio — apanha mais de 6 Pokémon e aparecem aqui!)"; g.appendChild(e); }
+    caixa.forEach((p,i)=>{ const c=document.createElement('div'); c.className="cartaP";
+      c.innerHTML=`<img src="${SPR(p.id)}"><div class="nm">${p.nome}</div><div class="nm" style="opacity:.8">${p.hp}/${p.hpMax}</div>
+        <div class="mini"><button class="jt vd"${equipa.length>=6?' disabled':''}>➕ Juntar</button></div>`;
+      onTap(c.querySelector('.jt'),()=>tirarDaCaixa(i)); g.appendChild(c); });
+  } else { $("#colTit").textContent="📕 Pokédex — "+dex.size+"/"+DEX.length;
+    DEX.forEach(p=>{ const tem=dex.has(p.id); const c=document.createElement('div'); c.className="cartaP"+(tem?"":" vazio2");
+      c.innerHTML=`<img src="${SPR(p.id)}" style="${tem?'':'filter:brightness(0) opacity(.6)'}"><div class="nm">${tem?p.nome:"???"}</div>`; g.appendChild(c); });
+  }
+}
+function guardar(i){ if(equipa.length<=1) return; const p=equipa.splice(i,1)[0]; caixa.push(p);
+  if(ativo>=equipa.length) ativo=equipa.length-1; atualizaHUD(); atualizaTreinador(); salvar(); abrirColecao('equipa'); }
+function tirarDaCaixa(i){ if(equipa.length>=6) return; const p=caixa.splice(i,1)[0]; equipa.push(p); atualizaHUD(); salvar(); abrirColecao('equipa'); }
+onTap($("#btDex"),()=>abrirColecao('dex')); onTap($("#btEquipa"),()=>abrirColecao('equipa'));
+onTap($("#btVoltar"),()=>$("#colecao").classList.remove("on"));
+onTap($("#btMenu"),()=>{ $("#mapa").classList.add("oculto"); $("#hud").classList.add("oculto"); $("#inicio").classList.add("on"); montarInicio(); });
+
+/* ============ INÍCIO ============ */
+function montarInicio(){
+  const cont=$("#continuar"); const sv=lerSave();
+  if(sv && sv.equipa && sv.equipa.length){ const lider=byId(sv.equipa[sv.ativo]?sv.equipa[sv.ativo].id:sv.equipa[0].id);
+    cont.innerHTML=`<button class="vd" id="btCont">▶️ Continuar (${sv.dex.length} na Pokédex${lider?", líder "+lider.nome:""})</button>`;
+    onTap($("#btCont"), ()=>carregarJogo(sv));
+  } else cont.innerHTML="";
+  const g=$("#starters"); g.innerHTML="";
+  STARTERS.forEach(id=>{ const p=byId(id); const c=document.createElement('div'); c.className="cartaP";
+    c.innerHTML=`<img src="${SPR(id)}"><div class="nm">${p.nome}</div><div class="nm"><span class="tipo" style="background:${CORTIPO[p.tipo]||'#777'}">${p.tipo}</span></div>`;
+    onTap(c,()=>escolherStarter(id)); g.appendChild(c); });
+}
+function entrarMapa(){ $("#inicio").classList.remove("on"); $("#hud").classList.remove("oculto"); $("#mapa").classList.remove("oculto"); fit(); desenharMapa(); atualizaHUD(); }
+function escolherStarter(id){
+  equipa=[criar(id,false)]; caixa=[]; ativo=0; dex=new Set([id]); campeaoFeito=false;
+  seed=Math.floor(Math.random()*1e9); gerarMundo(seed); secAtual={sr:0,sc:0}; pos={r:MIDR,c:2}; salvar();
+  entrarMapa();
+  modal("Boa escolha!", SPR(id), byId(id).nome+" é teu! Anda na relva 🌿 para encontrar Pokémon. Enfraquece e apanha com a Pokébola! Chega ao ⭐ para enfrentar o Campeão.","Vamos!",closeModal);
+}
+function desP(s){ const b=byId(s.id); return {id:s.id,nome:b.nome,tipo:b.tipo,hpMax:s.hpMax||b.hp,hp:s.hp,mv:b.mv,pe:(s.pe!=null?s.pe:(s.kos||0)),pePassivo:s.pePassivo||0}; }
+function carregarJogo(sv){
+  try{
+    equipa=(sv.equipa||[]).map(desP); caixa=(sv.caixa||[]).map(desP);
+    if(!equipa.length) throw new Error("save vazio");
+    ativo=Math.min(sv.ativo||0, equipa.length-1); dex=new Set(sv.dex||[]); campeaoFeito=!!sv.campeaoFeito;
+    seed=sv.seed||123456; gerarMundo(seed);
+    secAtual=sv.secAtual||{sr:0,sc:0};
+    if(secAtual.sr<0||secAtual.sr>=WROWS||secAtual.sc<0||secAtual.sc>=WCOLS) secAtual={sr:0,sc:0};
+    pos=sv.pos||{r:MIDR,c:2};
+    const M=grid();                                   // segurança p/ novas versões: se a casa já não é válida, vai ao Centro
+    if(!(M[pos.r]&&M[pos.r][pos.c]) || bloqueio(M[pos.r][pos.c])) pos={r:1,c:1};
+    entrarMapa();
+  }catch(e){ apagarSave(); montarInicio(); }
+}
+
+/* ============ D-PAD / MODAL ============ */
+document.querySelectorAll('#dpad button').forEach(b=> onTap(b,()=>mover(b.dataset.d)) );
+window.addEventListener('keydown',e=>{const k={ArrowUp:'c',ArrowDown:'b',ArrowLeft:'e',ArrowRight:'d'}[e.key]; if(k){e.preventDefault();mover(k);}});
+let modalFn; function modal(t,img,x,bt,fn){ $("#mTit").textContent=t; $("#mImg").innerHTML=img?`<img src="${img}">`:""; $("#mTxt").textContent=x; $("#mBt").textContent=bt; modalFn=fn; $("#modal").classList.add("on"); }
+function closeModal(){ $("#modal").classList.remove("on"); }
+onTap($("#mBt"),()=>{ if(modalFn)modalFn(); });
+
+fit(); montarInicio();
+</script>

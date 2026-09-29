@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Arcada</title>
+<meta name="description" content="A arcada de jogos.">
+<meta name="theme-color" content="#0b1026">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{
+    --bg:#0b1026; --bg2:#131a3a; --card:#1b2350; --card2:#232c66;
+    --ink:#eaf0ff; --muted:#a7b0da; --line:rgba(255,255,255,.10);
+    --glow:#6ad7ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    color:var(--ink);
+    min-height:100dvh;
+    background:
+      radial-gradient(1200px 700px at 20% -10%, #1c2a6b 0%, transparent 55%),
+      radial-gradient(1000px 800px at 110% 10%, #3a1d63 0%, transparent 50%),
+      linear-gradient(180deg,var(--bg) 0%, var(--bg2) 100%);
+    background-attachment:fixed;
+    -webkit-tap-highlight-color:transparent;
+    padding:calc(env(safe-area-inset-top) + 22px) 16px calc(env(safe-area-inset-bottom) + 40px);
+  }
+  /* estrelinhas */
+  .stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+  .stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:tw 3s infinite ease-in-out}
+  @keyframes tw{0%,100%{opacity:.2}50%{opacity:1}}
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto}
+  header{text-align:center;margin:6px 0 26px}
+  .logo{font-size:13px;letter-spacing:.32em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+  h1{
+    margin:0;font-size:clamp(34px,10vw,60px);line-height:1;font-weight:900;
+    background:linear-gradient(90deg,#8be9ff,#c8a7ff,#ffd28b);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 4px 18px rgba(120,180,255,.35));
+  }
+  .sub{color:var(--muted);margin-top:10px;font-size:15px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media (min-width:620px){.grid{grid-template-columns:repeat(3,1fr)}}
+  a.game{
+    display:flex;flex-direction:column;gap:10px;
+    text-decoration:none;color:inherit;
+    background:linear-gradient(160deg,var(--card),var(--card2));
+    border:1px solid var(--line);border-radius:20px;
+    padding:18px 16px 16px;min-height:150px;
+    position:relative;overflow:hidden;
+    transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    box-shadow:0 10px 24px rgba(0,0,0,.28);
+  }
+  a.game:active{transform:scale(.97)}
+  @media (hover:hover){a.game:hover{transform:translateY(-3px);border-color:var(--glow);box-shadow:0 16px 34px rgba(0,0,0,.4),0 0 0 1px rgba(106,215,255,.25)}}
+  .emoji{font-size:40px;line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
+  .name{font-weight:800;font-size:17px}
+  .tag{font-size:12.5px;color:var(--muted);margin-top:auto;line-height:1.35}
+  .badge{position:absolute;top:12px;right:12px;font-size:10px;letter-spacing:.05em;
+    padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.10);color:var(--muted);border:1px solid var(--line)}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:30px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="wrap">
+  <header>
+    <div class="logo">◆ Sala de Jogos ◆</div>
+    <h1>ARCADA</h1>
+    <div class="sub">Escolhe um jogo e diverte-te 🚀</div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    Feito com carinho pelo Pai 💙<br>
+    Funciona sem internet depois de abrir uma vez.
+  </footer>
+</div>
+
+<script>
+  // Estrelinhas de fundo
+  (function(){
+    const s=document.getElementById('stars');let h='';
+    for(let i=0;i<60;i++){
+      h+=`<i style="left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${(Math.random()*3).toFixed(2)}s"></i>`;
+    }
+    s.innerHTML=h;
+  })();
+
+  const JOGOS = [
+    {emoji:"🕵️", name:"Detetives Galácticos", tag:"Resolve casos e aprende (1.º/2.º ano)", href:"jogos/detetives/index.html"},
+    {emoji:"🕷️", name:"Herói-Aranha", tag:"Salta, baloiça na teia e apanha moedas", href:"jogos/heroi-aranha/index.html"},
+    {emoji:"⚔️", name:"Arena Brava", tag:"Sobrevive às vagas com super-heróis", href:"jogos/arena-brava/index.html"},
+    {emoji:"🦠", name:"Vírus!", tag:"Jogo de cartas contra o computador", href:"jogos/virus/index.html", badge:"Novo"},
+    {emoji:"🗼", name:"Pokémon Defesa", tag:"Tower defense com torres Pokémon", href:"jogos/pokemon-defesa/index.html"},
+    {emoji:"⚡", name:"Apanha & Batalha", tag:"Apanha e luta por turnos", href:"jogos/apanha-batalha/index.html"},
+    {emoji:"⚽", name:"Jogo do Afonso", tag:"Táticas de futebol por turnos", href:"jogos/jogo-do-afonso/index.html"},
+  ];
+
+  const grid=document.getElementById('grid');
+  grid.innerHTML = JOGOS.map(j=>`
+    <a class="game" href="${j.href}">
+      ${j.badge?`<span class="badge">${j.badge}</span>`:""}
+      <div class="emoji">${j.emoji}</div>
+      <div class="name">${j.name}</div>
+      <div class="tag">${j.tag}</div>
+    </a>`).join("");
+</script>
+</body>
+</html>
