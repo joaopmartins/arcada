@@ -88,6 +88,20 @@
   .crew .m.locked img{filter:grayscale(1) brightness(.5)}
   .crew .m b{display:block;margin-top:6px;font-size:13px}
   .crew .m small{color:#bdeaff;font-size:11px}
+  .herocard{pointer-events:auto;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);
+    border-radius:14px;padding:8px;overflow:hidden;cursor:pointer;transition:transform .1s, border-color .1s}
+  .herocard:active{transform:scale(.96)}
+  .herocard.sel{border-color:var(--gold);background:rgba(255,207,63,.14)}
+  .herocard img{width:100%;height:108px;object-fit:cover;object-position:top center;border-radius:8px;background:#cdeafc}
+  .herocard b{display:block;margin-top:6px;font-size:13px}
+  .herocard small{color:#ffcf3f;font-size:11px;line-height:1.3;display:block}
+  .trophies{display:flex;flex-direction:column;gap:10px;width:100%;max-width:440px}
+  .trophy{display:flex;align-items:center;gap:12px;text-align:left;background:rgba(255,255,255,.08);
+    border:2px solid rgba(255,255,255,.18);border-radius:14px;padding:10px 12px}
+  .trophy.locked{opacity:.55;filter:grayscale(.6)}
+  .trophy .ti{font-size:28px;width:42px;text-align:center;flex:0 0 auto}
+  .trophy b{display:block;font-size:15px}
+  .trophy small{color:#bdeaff;font-size:12px}
 
   .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
   .fade{animation:fade .35s ease}
@@ -138,6 +152,7 @@
   <button class="big-btn" data-go="map">▶ Jogar</button>
   <div class="row">
     <button class="big-btn ghost" data-go="roster">👒 Tripulação</button>
+    <button class="big-btn ghost" data-go="trophies">🏆 Troféus</button>
     <button class="big-btn ghost" data-go="help">❔ Como jogar</button>
   </div>
 </div>
@@ -147,6 +162,14 @@
   <h2 class="title" style="font-size:clamp(24px,7vw,40px)">Escolhe uma ilha</h2>
   <div class="islands" id="islandList"></div>
   <button class="big-btn ghost" data-go="title">← Voltar</button>
+</div>
+
+<!-- Ecrã: Escolher herói -->
+<div class="screen" id="scHero">
+  <h2 class="title" style="font-size:clamp(24px,7vw,40px)">Escolhe o herói</h2>
+  <p class="muted">Cada um tem um poder especial!</p>
+  <div class="crew" id="heroList"></div>
+  <button class="big-btn ghost" data-go="map">← Voltar</button>
 </div>
 
 <!-- Ecrã: Carta de chefe -->
@@ -181,6 +204,13 @@
   <h2 class="title" style="font-size:clamp(24px,7vw,40px)">A tua Tripulação</h2>
   <p class="muted">Vence ilhas para juntar novos amigos ao bando dos Chapéus de Palha!</p>
   <div class="crew" id="crewList"></div>
+  <button class="big-btn ghost" data-go="title">← Voltar</button>
+</div>
+
+<!-- Ecrã: Troféus -->
+<div class="screen" id="scTrophies">
+  <h2 class="title" style="font-size:clamp(24px,7vw,40px)">Troféus <span id="trophyCount" style="font-size:.5em;color:#bdeaff"></span></h2>
+  <div class="trophies" id="trophyList"></div>
   <button class="big-btn ghost" data-go="title">← Voltar</button>
 </div>
 
@@ -277,7 +307,20 @@ function loadImages(cb){
 
 /* ---------- Save ---------- */
 const SAVE_KEY="op_gomu_v1";
-const DEFAULT_SAVE={cleared:0, bellies:0, crew:["luffy"]};
+const DEFAULT_SAVE={cleared:0, bellies:0, crew:["luffy"], trophies:{}};
+const TROPHIES=[
+  {id:"first",   icon:"🏴‍☠️", name:"Primeiro passo",       desc:"Vence a tua primeira ilha"},
+  {id:"rocket",  icon:"🚀",    name:"Gomu Gomu Rocket",      desc:"Lança-te num anel azul"},
+  {id:"flawless",icon:"🛡️",    name:"Sem um arranhão",       desc:"Vence uma ilha sem perder corações"},
+  {id:"rich",    icon:"💰",    name:"Caçador de tesouros",   desc:"Junta 200 bellies no total"},
+  {id:"crew",    icon:"👒",    name:"Bando completo",        desc:"Junta os 6 da tripulação"},
+  {id:"allcrew", icon:"⭐",    name:"Rei dos Piratas",       desc:"Vence todas as ilhas"},
+];
+function award(id){
+  if(!save.trophies) save.trophies={};
+  if(save.trophies[id]) return false;
+  save.trophies[id]=true; writeSave(); return true;
+}
 let save = loadSave();
 function loadSave(){ try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));return Object.assign({},DEFAULT_SAVE,s||{});}catch(e){return Object.assign({},DEFAULT_SAVE);} }
 function writeSave(){ try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){} }
@@ -290,6 +333,24 @@ const ISLANDS = [
   {key:"baratie", name:"Baratie", emoji:"🍳", color:"#c0392b", boss:"gin", reward:"sanji", len:4000},
   {key:"drum", name:"Drum Island", emoji:"❄️", color:"#8fb8d8", boss:"wapol", reward:"chopper", len:4400},
 ];
+
+/* ---------- Heróis jogáveis (aspeto + poder próprio) ---------- */
+const HEROES = {
+  luffy:  {name:"Luffy",  skin:"#f6c79a", hair:"#1a1a1a", vest:"#e7322c", legs:"#1f5fd0", hat:"straw", scar:true,
+           perk:"⚡ Gear 2: mais rápido", cry:"Gomu Gomu!"},
+  zoro:   {name:"Zoro",   skin:"#e8b98a", hair:"#2e7d32", vest:"#2e7d32", legs:"#20304a", bandana:"#1f1f1f",
+           perk:"⚔️ Corte forte (dano x2)", cry:"Corte!"},
+  nami:   {name:"Nami",   skin:"#f3cda0", hair:"#e8821e", vest:"#2b9fd6", legs:"#214a7a", longhair:true,
+           perk:"🧲 Íman de moedas", cry:"Trovão!"},
+  usopp:  {name:"Usopp",  skin:"#8a5a2b", hair:"#141414", vest:"#c2a04a", legs:"#5a3a12", nose:true, bandana:"#4a7a3a",
+           perk:"🎯 Tiro de longe", cry:"Tiro!"},
+  sanji:  {name:"Sanji",  skin:"#f3cda0", hair:"#f2c14e", vest:"#222", legs:"#111", suit:true,
+           perk:"🦵 Salto triplo", cry:"Pontapé!"},
+  chopper:{name:"Chopper",skin:"#d08a4a", hair:"#7a4a22", vest:"#c0392b", legs:"#5a3a12", antlers:true, hat:"pink", small:true,
+           perk:"❤️ +1 coração", cry:"Toma!"},
+};
+let chosenHero="luffy";
+let lastCheckpoint={island:-1,x:0};   // checkpoint para retomar ao perder
 
 /* ---------- Canvas ---------- */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
@@ -336,7 +397,7 @@ let G=null;          // estado do jogo a decorrer
 const pad=document.getElementById("pad");
 
 /* ---------- Navegação de ecrãs ---------- */
-const screens={title:"scTitle",map:"scMap",boss:"scBoss",win:"scWin",over:"scOver",roster:"scRoster",help:"scHelp"};
+const screens={title:"scTitle",map:"scMap",hero:"scHero",boss:"scBoss",win:"scWin",over:"scOver",roster:"scRoster",trophies:"scTrophies",help:"scHelp"};
 function show(s){
   STATE=s;
   Object.values(screens).forEach(id=>document.getElementById(id).classList.remove("on"));
@@ -347,6 +408,7 @@ function show(s){
   if(s!=="play") SFX.stopMusic();
   if(s==="map") buildMap();
   if(s==="roster") buildRoster();
+  if(s==="trophies") buildTrophies();
 }
 document.querySelectorAll("[data-go]").forEach(b=>{
   b.addEventListener("click",()=>{ const g=b.dataset.go; if(g==="map")show("map"); else show(g); });
@@ -363,13 +425,29 @@ function buildMap(){
     el.innerHTML=`<div class="ic">${isl.emoji}</div>
       <div><h3>${i+1}. ${isl.name}</h3><p>${locked?"🔒 Vence a ilha anterior":("Chefe: "+CHARS[isl.boss].name)}</p></div>
       <div class="go">${cleared?"⭐ Repetir":(locked?"🔒":"Jogar ▶")}</div>`;
-    if(!locked) el.addEventListener("click",()=>startBossCard(i));
+    if(!locked) el.addEventListener("click",()=>startHeroSelect(i));
     list.appendChild(el);
   });
 }
 
-/* ---------- Carta de chefe ---------- */
+/* ---------- Escolher herói ---------- */
 let pendingIsland=0;
+function startHeroSelect(i){
+  pendingIsland=i;
+  const list=document.getElementById("heroList"); list.innerHTML="";
+  const unlocked = ["luffy","zoro","nami","usopp","sanji","chopper"].filter(k=>save.crew.includes(k));
+  unlocked.forEach(k=>{
+    const H=HEROES[k];
+    const el=document.createElement("div");
+    el.className="herocard"+(k===chosenHero?" sel":"");
+    el.innerHTML=`<img src="assets/${k}.webp" alt="${H.name}"><b>${H.name}</b><small>${H.perk}</small>`;
+    el.addEventListener("click",()=>{ chosenHero=k; startBossCard(pendingIsland); });
+    list.appendChild(el);
+  });
+  show("hero");
+}
+
+/* ---------- Carta de chefe ---------- */
 function startBossCard(i){
   pendingIsland=i;
   const isl=ISLANDS[i], b=CHARS[isl.boss];
@@ -389,6 +467,19 @@ function buildRoster(){
     el.className="m"+(got?"":" locked");
     el.innerHTML=`<img src="assets/${k}.webp" alt="${CHARS[k].name}">
       <b>${got?CHARS[k].name:"???"}</b><small>${got?CHARS[k].job:"🔒 por juntar"}</small>`;
+    list.appendChild(el);
+  });
+}
+function buildTrophies(){
+  const list=document.getElementById("trophyList"); list.innerHTML="";
+  const n=TROPHIES.filter(t=>save.trophies&&save.trophies[t.id]).length;
+  document.getElementById("trophyCount").textContent=`${n} / ${TROPHIES.length}`;
+  TROPHIES.forEach(t=>{
+    const got=save.trophies&&save.trophies[t.id];
+    const el=document.createElement("div");
+    el.className="trophy"+(got?"":" locked");
+    el.innerHTML=`<div class="ti">${got?t.icon:"🔒"}</div>
+      <div><b>${got?t.name:"???"}</b><small>${t.desc}</small></div>`;
     list.appendChild(el);
   });
 }
@@ -428,18 +519,27 @@ function makeLevel(i){
       x+=150+rnd()*120;
     }
   }
+  // checkpoint a meio do caminho (em chão sólido)
+  let cpx=Math.round(len*0.52); while(!(function(){for(const pp of pits){if(cpx>pp[0]-30&&cpx<pp[1]+30)return false;}return true;})()) cpx+=40;
   return {isl,len,groundY,pits,plats,coins,enemies,anchors,
-    bossX:len-300};
+    checkpoints:[cpx], bossX:len-300};
 }
 
-function startLevel(i){
+function startLevel(i, resume){
   const L=makeLevel(i);
   const gy=L.groundY();
+  const hero = HEROES[chosenHero]?chosenHero:"luffy";
+  const maxHp   = hero==="chopper"?4:3;
+  const maxJumps= hero==="sanji"?3:2;
+  // retomar do checkpoint (só em "tentar de novo")
+  let startX=120;
+  if(resume && lastCheckpoint.island===i && lastCheckpoint.x>0) startX=lastCheckpoint.x;
+  else lastCheckpoint={island:-1,x:0};
   G={
-    island:i, L,
-    cam:0,
-    player:{x:120,y:gy-70,w:42,h:64,vx:0,vy:0,ground:true,face:1,jumps:2,
-            hp:3, inv:0, safeX:120, launch:0, launchVX:0},
+    island:i, L, hero, cpReached:[],
+    cam:Math.max(0, startX-W*0.32),
+    player:{x:startX,y:gy-70,w:42,h:64,vx:0,vy:0,ground:true,face:1,jumps:maxJumps, maxJumps,
+            hp:maxHp, maxHp, inv:0, safeX:startX, launch:0, launchVX:0},
     punch:{on:false,t:0,len:0,dir:1,hit:new Set()},
     coins:L.coins.map(c=>({...c,got:false})),
     enemies:L.enemies.map(e=>({x:e.x,y:gy-46,w:34,h:46,vx:-60,alive:true,hurt:0})),
@@ -488,14 +588,15 @@ function update(dt){
   const scrollMax = (G.phase==="bossfight") ? (G.bossWall!=null?G.bossWall:1e9) : G.L.len;
 
   // --- movimento horizontal ---
+  const mv = MOVE*(G.hero==="luffy"?1.18:1);   // Gear 2 do Luffy
   let ax=0;
   if(keys.left) ax-=1; if(keys.right) ax+=1;
   if(ax!==0) p.face=ax>0?1:-1;
   if(p.launch>0){           // em pleno Gomu Gomu Rocket: momentum manda
     p.launch-=dt;
-    p.x += (p.launchVX + ax*MOVE*0.4)*dt;
+    p.x += (p.launchVX + ax*mv*0.4)*dt;
   } else {
-    p.vx = ax*MOVE;
+    p.vx = ax*mv;
     p.x += p.vx*dt;
   }
   if(p.x<40) p.x=40;
@@ -503,7 +604,7 @@ function update(dt){
 
   // --- salto ---
   if(jumpEdge){
-    if(p.jumps>0){ p.vy=-JUMP; p.ground=false; p.jumps--; p.launch=0; SFX.jump(); }
+    if(p.jumps>0){ p.vy=-JUMP*(G.hero==="sanji"?1.12:1); p.ground=false; p.jumps--; p.launch=0; SFX.jump(); }
   }
   jumpEdge=false;
 
@@ -532,7 +633,7 @@ function update(dt){
       }
     }
   }
-  if(p.ground){ p.jumps=2; p.launch=0; if(groundSolidAt(p.x)) p.safeX=Math.min(p.x,scrollMax-60); }
+  if(p.ground){ p.jumps=p.maxJumps; p.launch=0; if(groundSolidAt(p.x)) p.safeX=Math.min(p.x,scrollMax-60); }
 
   // --- cair num buraco / fora do ecrã ---
   if(p.y - p.h/2 > H+40){
@@ -544,12 +645,12 @@ function update(dt){
   const pc=G.punch;
   if(punchEdge && !pc.on){
     pc.on=true; pc.t=0; pc.dir=p.face; pc.hit.clear(); pc.rocket=false;
-    addFx("pop", p.x+p.face*30, p.y-30, "Gomu Gomu!", "#ffe27a"); SFX.punch();
+    addFx("pop", p.x+p.face*30, p.y-30, (HEROES[G.hero]||HEROES.luffy).cry, "#ffe27a"); SFX.punch();
   }
   punchEdge=false;
   if(pc.on){
     pc.t+=dt;
-    const MAXLEN=150, DUR=0.26;
+    const MAXLEN=150+(G.hero==="usopp"?70:0), DUR=0.26;
     const prog = pc.t/DUR;
     pc.len = MAXLEN*Math.sin(Math.min(prog,1)*Math.PI); // estica e recolhe
     if(pc.t>=DUR){ pc.on=false; pc.len=0; }
@@ -565,7 +666,7 @@ function update(dt){
     if(G.boss && G.boss.alive && !pc.hit.has(G.boss)){
       const b=G.boss;
       if(Math.abs(fist-b.x)<b.w/2+16 && Math.abs(p.y-(b.y-b.h/2))<b.h/2+30){
-        if(canHitBoss(b)){ b.hp--; b.hurt=0.4; pc.hit.add(b); addFx("pop",b.x,b.y-b.h,"-1","#fff"); SFX.hit();
+        if(canHitBoss(b)){ const dmg=(G.hero==="zoro"?2:1); b.hp-=dmg; b.hurt=0.4; pc.hit.add(b); addFx("pop",b.x,b.y-b.h,"-"+dmg,"#fff"); SFX.hit();
           if(b.hp<=0) killBoss(); }
       }
     }
@@ -578,6 +679,7 @@ function update(dt){
           p.launchVX=dx/d*SP; p.vy=dy/d*SP-160; p.launch=0.45;
           p.ground=false; p.jumps=1; pc.rocket=true; pc.on=false; pc.len=0;
           addFx("pop",ax,ay-12,"Rocket!","#8be9ff"); SFX.rocket();
+          if(award("rocket")) addFx("text", G.cam+W/2, H*0.26, "🏆 Troféu desbloqueado!", "#ffcf3f");
           break;
         }
       }
@@ -607,8 +709,20 @@ function update(dt){
   // --- moedas ---
   for(const c of G.coins){
     if(c.got) continue;
-    const cy=gy-c.dy;
+    let cy=gy-c.dy;
+    if(G.hero==="nami"){ // íman de moedas
+      const d=Math.hypot(c.x-p.x, cy-p.y);
+      if(d<170){ c.x += (p.x-c.x)*Math.min(1,dt*6); c.dy += ((gy-p.y)-c.dy)*Math.min(1,dt*6); cy=gy-c.dy; }
+    }
     if(Math.abs(c.x-p.x)<30 && Math.abs(cy-p.y)<42){ c.got=true; gainBelly(1,c.x,cy); }
+  }
+
+  // --- checkpoint ---
+  if(G.L.checkpoints) for(const cx of G.L.checkpoints){
+    if(!G.cpReached.includes(cx) && p.x>cx){
+      G.cpReached.push(cx); lastCheckpoint={island:G.island,x:cx};
+      addFx("text", G.cam+W/2, H*0.3, "Checkpoint! 🚩", "#8be9ff"); SFX.coin();
+    }
   }
 
   // --- câmara ---
@@ -663,8 +777,8 @@ function updateBoss(dt){
       // aproxima-se do jogador
       b.x += Math.sign(p.x-b.x)*95*dt;
       if(Math.abs(b.x-p.x)<110 && b.stateT>0.8){ b.state="wind"; b.stateT=0; }
-    } else if(b.state==="wind"){ // prepara o machado
-      if(b.stateT>0.6){ b.state="swing"; b.stateT=0; }
+    } else if(b.state==="wind"){ // prepara o machado (aviso maior)
+      if(b.stateT>0.85){ b.state="swing"; b.stateT=0; }
     } else if(b.state==="swing"){
       if(b.stateT<0.25 && p.inv<=0 && Math.abs(b.x-p.x)<95 && Math.abs(p.y-b.y)<110) hurtPlayer();
       if(b.stateT>0.5){ b.state="idle"; b.stateT=0; }
@@ -686,7 +800,9 @@ function updateBoss(dt){
   }
   else if(b.kind==="arlong"){
     if(b.state==="idle"){
-      if(b.stateT>0.9){ b.state="charge"; b.stateT=0; b.dir=Math.sign(p.x-b.x)||1; }
+      if(b.stateT>0.9){ b.state="ready"; b.stateT=0; b.dir=Math.sign(p.x-b.x)||1; }
+    } else if(b.state==="ready"){ // aviso antes de carregar
+      if(b.stateT>0.55){ b.state="charge"; b.stateT=0; }
     } else if(b.state==="charge"){
       b.x += b.dir*430*dt;
       if(p.inv<=0 && Math.abs(b.x-p.x)<70 && Math.abs(p.y-b.y)<110) hurtPlayer();
@@ -731,30 +847,43 @@ function winLevel(){
   SFX.win(); SFX.stopMusic();
   const i=G.island, isl=ISLANDS[i];
   save.bellies += G.bellies;
-  let unlockedTxt="";
   if(i>=save.cleared){ save.cleared=i+1;
     if(isl.reward && !save.crew.includes(isl.reward)){ save.crew.push(isl.reward); }
   }
   writeSave();
+  // troféus
+  const newT=[];
+  if(save.cleared>=1 && award("first")) newT.push("first");
+  if(!G.tookDamage && award("flawless")) newT.push("flawless");
+  if(save.bellies>=200 && award("rich")) newT.push("rich");
+  if(save.crew.length>=6 && award("crew")) newT.push("crew");
+  if(save.cleared>=ISLANDS.length && award("allcrew")) newT.push("allcrew");
   document.getElementById("winBelly").innerHTML=`Apanhaste <b>฿ ${G.bellies}</b> nesta ilha!`;
   const wu=document.getElementById("winUnlock");
+  let html="";
   if(isl.reward){
     const r=isl.reward;
-    wu.innerHTML=`<p class="muted">Novo membro da tripulação:</p>
+    html=`<p class="muted">Novo membro da tripulação:</p>
       <img src="assets/${r}.webp" style="width:140px;max-height:34vh;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))">
       <h3 style="margin:6px 0 0;color:#ffcf3f">👒 ${CHARS[r].name} juntou-se!</h3>`;
-  } else wu.innerHTML="";
+  }
+  if(newT.length){
+    const t=TROPHIES.filter(x=>newT.includes(x.id));
+    html+=`<div style="margin-top:14px"><p class="muted" style="margin:0 0 4px">Novos troféus!</p>${t.map(x=>`<div style="color:#ffcf3f;font-weight:800;font-size:15px">🏆 ${x.icon} ${x.name}</div>`).join("")}</div>`;
+  }
+  wu.innerHTML=html;
   show("win");
 }
 
 function gainBelly(n,x,y){ G.bellies+=n; SFX.coin(); if(x!=null)addFx("pop",x,y-20,"+"+n,"#ffe27a"); }
 function hurtPlayer(fall){
   const p=G.player; if(p.inv>0 && !fall) return;
+  G.tookDamage=true;
   p.hp--; p.inv=1.1; SFX.hurt();
   addFx("pop",p.x,p.y-40,"Ai!","#ff8a8a");
   if(p.hp<=0){ SFX.stopMusic(); setTimeout(()=>{ if(STATE==="play") show("over"); },400); }
 }
-document.getElementById("retryBtn").addEventListener("click",()=>startLevel(G?G.island:0));
+document.getElementById("retryBtn").addEventListener("click",()=>startLevel(G?G.island:0, true));
 
 /* ---- Som / Pausa (UI) ---- */
 const muteBtn=document.getElementById("muteBtn");
@@ -793,6 +922,9 @@ function render(){
   // pontos de agarre (Gomu Gomu Rocket)
   if(G.L.anchors) for(const an of G.L.anchors){ drawAnchor(an.x, gy-an.dy); }
 
+  // checkpoints
+  if(G.L.checkpoints) for(const cx of G.L.checkpoints){ drawCheckpoint(cx, gy, G.cpReached.includes(cx)); }
+
   // moedas
   for(const c of G.coins){ if(!c.got) drawBelly(c.x, gy-c.dy); }
 
@@ -804,7 +936,7 @@ function render(){
   if(G.boss && G.boss.knives) for(const k of G.boss.knives) drawKnife(k);
 
   // jogador
-  drawLuffy(G.player, G.punch);
+  drawHero(G.player, G.punch);
 
   // efeitos no mundo
   for(const f of G.fx){ if(f.type==="pop") drawPop(f); }
@@ -877,6 +1009,16 @@ function drawPlat(x,y,w){
   ctx.fillStyle="#8a5a2b"; roundRect(x,y,w,16,6); ctx.fill();
   ctx.fillStyle="#5bbf5b"; roundRect(x,y-6,w,10,5); ctx.fill();
 }
+function drawCheckpoint(x,gy,reached){
+  ctx.save(); ctx.translate(x,gy);
+  ctx.fillStyle="#666"; ctx.fillRect(-2,-74,4,74);        // mastro
+  const wave=reached?Math.sin(G.t*6)*3:0;
+  ctx.fillStyle=reached?"#49c96a":"#aab2bd";              // bandeira
+  ctx.beginPath(); ctx.moveTo(2,-74); ctx.lineTo(34,-66+wave); ctx.lineTo(2,-56); ctx.closePath(); ctx.fill();
+  ctx.fillStyle="#fff"; ctx.font="bold 11px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("★",14,-65);
+  ctx.restore();
+}
 function drawBelly(x,y){
   const t=G.t*4;
   ctx.save(); ctx.translate(x,y+Math.sin(t)*3);
@@ -886,57 +1028,67 @@ function drawBelly(x,y){
   ctx.fillText("฿",0,1); ctx.restore();
 }
 
-/* ---- Luffy (chibi, por código) ---- */
-function drawLuffy(p,pc){
+/* ---- Herói jogável (chibi, por código, aspeto por personagem) ---- */
+function drawHero(p,pc){
+  const C = HEROES[G.hero] || HEROES.luffy;
   const blink = (p.inv>0 && Math.floor(G.t*14)%2===0);
   ctx.save();
   ctx.translate(p.x,p.y);
   if(blink) ctx.globalAlpha=0.45;
   const f=p.face;
   const squash = p.ground? (keys.left||keys.right? 1+Math.sin(G.t*18)*0.03:1) : (p.vy<0?1.08:0.94);
-  ctx.scale(f,1); ctx.scale(1/Math.max(squash,.8),squash);
+  ctx.scale(f,1);
+  if(C.small) ctx.scale(0.9,0.9);
+  ctx.scale(1/Math.max(squash,.8),squash);
 
-  // braço de borracha (Gomu Gomu) — desenhado primeiro (atrás)
+  // braço de ataque esticado (atrás)
   if(pc.on && pc.len>4){
-    ctx.strokeStyle="#f2b48a"; ctx.lineWidth=11; ctx.lineCap="round";
+    ctx.strokeStyle=C.skin; ctx.lineWidth=11; ctx.lineCap="round";
     ctx.beginPath(); ctx.moveTo(10,-6); ctx.lineTo(20+pc.len,-6); ctx.stroke();
-    // punho
-    ctx.fillStyle="#f2b48a"; ctx.beginPath(); ctx.arc(22+pc.len,-6,12,0,7); ctx.fill();
+    ctx.fillStyle=C.skin; ctx.beginPath(); ctx.arc(22+pc.len,-6,12,0,7); ctx.fill();
     ctx.strokeStyle="rgba(0,0,0,.18)"; ctx.lineWidth=2; ctx.stroke();
   }
 
-  // pernas (azul)
-  ctx.fillStyle="#1f5fd0";
+  // pernas
   const step = p.ground&&(keys.left||keys.right)? Math.sin(G.t*18)*5:0;
-  roundRect(-13,14,11,16,3); ctx.fill();
-  roundRect(3,14,11,16,3); ctx.fill();
-  ctx.save(); ctx.translate(0,0);
-  ctx.fillStyle="#1f5fd0"; ctx.fillRect(-13,14+step,11,14); ctx.fillRect(3,14-step,11,14); ctx.restore();
+  ctx.fillStyle=C.legs; ctx.fillRect(-13,14+step,11,15); ctx.fillRect(3,14-step,11,15);
 
-  // colete vermelho (corpo)
-  ctx.fillStyle="#e7322c"; roundRect(-16,-14,32,30,8); ctx.fill();
-  ctx.fillStyle="#f2cba0"; ctx.fillRect(-4,-14,8,24); // peito aberto
-  // braço parado (quando não dá murro)
-  if(!(pc.on&&pc.len>4)){ ctx.fillStyle="#e7322c"; roundRect(10,-10,9,20,4); ctx.fill(); ctx.fillStyle="#f2b48a"; ctx.beginPath(); ctx.arc(14,12,6,0,7); ctx.fill(); }
-  ctx.fillStyle="#e7322c"; roundRect(-19,-10,9,20,4); ctx.fill(); ctx.fillStyle="#f2b48a"; ctx.beginPath(); ctx.arc(-15,12,6,0,7); ctx.fill();
+  // corpo
+  ctx.fillStyle=C.vest; roundRect(-16,-14,32,30,8); ctx.fill();
+  if(G.hero==="luffy"){ ctx.fillStyle="#f2cba0"; ctx.fillRect(-4,-14,8,24); }      // peito aberto
+  if(C.suit){ ctx.fillStyle="#fff"; ctx.beginPath(); ctx.moveTo(-7,-14); ctx.lineTo(0,2); ctx.lineTo(7,-14); ctx.closePath(); ctx.fill();
+              ctx.fillStyle="#111"; ctx.fillRect(-2,-8,4,12); }                    // camisa + gravata
+  // braços
+  if(!(pc.on&&pc.len>4)){ ctx.fillStyle=C.vest; roundRect(10,-10,9,20,4); ctx.fill(); ctx.fillStyle=C.skin; ctx.beginPath(); ctx.arc(14,12,6,0,7); ctx.fill(); }
+  ctx.fillStyle=C.vest; roundRect(-19,-10,9,20,4); ctx.fill(); ctx.fillStyle=C.skin; ctx.beginPath(); ctx.arc(-15,12,6,0,7); ctx.fill();
 
   // cabeça
-  ctx.fillStyle="#f6c79a"; ctx.beginPath(); ctx.arc(0,-28,16,0,7); ctx.fill();
+  ctx.fillStyle=C.skin; ctx.beginPath(); ctx.arc(0,-28,16,0,7); ctx.fill();
   // cabelo
-  ctx.fillStyle="#1a1a1a"; ctx.beginPath(); ctx.arc(0,-34,15,Math.PI,0); ctx.fill();
-  ctx.fillRect(-15,-34,30,5);
+  ctx.fillStyle=C.hair;
+  if(C.longhair){ ctx.beginPath(); ctx.arc(0,-33,16,Math.PI,0); ctx.fill(); ctx.fillRect(-16,-33,5,24); ctx.fillRect(11,-33,5,24); }
+  else { ctx.beginPath(); ctx.arc(0,-34,15,Math.PI,0); ctx.fill(); ctx.fillRect(-15,-34,30,5); }
+  if(C.suit){ ctx.fillStyle=C.hair; ctx.beginPath(); ctx.moveTo(-15,-34); ctx.lineTo(3,-34); ctx.lineTo(-5,-20); ctx.lineTo(-15,-24); ctx.closePath(); ctx.fill(); } // franja
+  if(C.bandana){ ctx.fillStyle=C.bandana; roundRect(-16,-39,32,9,3); ctx.fill(); }
+  if(C.nose){ ctx.fillStyle=C.skin; ctx.beginPath(); ctx.moveTo(0,-29); ctx.lineTo(27,-24); ctx.lineTo(0,-19); ctx.closePath(); ctx.fill(); }
   // olhos
   ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(-5,-28,4.2,0,7); ctx.arc(6,-28,4.2,0,7); ctx.fill();
   ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(-4,-28,2.1,0,7); ctx.arc(7,-28,2.1,0,7); ctx.fill();
-  // cicatriz
-  ctx.strokeStyle="#c44"; ctx.lineWidth=1.6;
-  ctx.beginPath(); ctx.moveTo(-10,-22); ctx.lineTo(-10,-18); ctx.moveTo(-12,-20); ctx.lineTo(-8,-20); ctx.stroke();
-  // sorriso
+  if(C.scar){ ctx.strokeStyle="#c44"; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(-10,-22); ctx.lineTo(-10,-18); ctx.moveTo(-12,-20); ctx.lineTo(-8,-20); ctx.stroke(); }
   ctx.strokeStyle="#5a2a12"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(1,-22,6,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
-  // chapéu de palha
-  ctx.fillStyle="#f2c14e"; ctx.beginPath(); ctx.ellipse(0,-40,22,7,0,0,7); ctx.fill(); // aba
-  ctx.beginPath(); ctx.ellipse(0,-44,13,10,0,Math.PI,0); ctx.fill(); // copa
-  ctx.fillStyle="#e7322c"; ctx.fillRect(-13,-44,26,4); // fita vermelha
+  // chapéus
+  if(C.hat==="straw"){
+    ctx.fillStyle="#f2c14e"; ctx.beginPath(); ctx.ellipse(0,-40,22,7,0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0,-44,13,10,0,Math.PI,0); ctx.fill();
+    ctx.fillStyle="#e7322c"; ctx.fillRect(-13,-44,26,4);
+  } else if(C.hat==="pink"){
+    ctx.strokeStyle="#9a6a3a"; ctx.lineWidth=4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(-8,-44); ctx.lineTo(-15,-55); ctx.lineTo(-21,-53); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(8,-44); ctx.lineTo(15,-55); ctx.lineTo(21,-53); ctx.stroke();
+    ctx.fillStyle="#e86a9a"; ctx.beginPath(); ctx.ellipse(0,-40,17,6,0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0,-45,12,10,0,Math.PI,0); ctx.fill();
+    ctx.fillStyle="#fff"; ctx.fillRect(-2,-51,4,9); ctx.fillRect(-6,-48,12,3); // cruz médica
+  }
   ctx.restore();
 }
 
@@ -1023,6 +1175,7 @@ function drawBoss(b){
     ctx.fillStyle="#fff"; for(let i=0;i<5;i++){ ctx.beginPath(); ctx.moveTo(-10+i*6,-102); ctx.lineTo(-7+i*6,-96); ctx.lineTo(-4+i*6,-102); ctx.fill(); }
     ctx.fillStyle="#111"; ctx.fillRect(-8,-118,3,3); ctx.fillRect(4,-118,3,3);
     if(b.state==="stun"){ ctx.fillStyle="#ffe27a"; ctx.font="bold 18px sans-serif"; ctx.textAlign="center"; ctx.fillText("★ tonto ★",0,-134); }
+    if(b.state==="ready" && Math.floor(G.t*10)%2===0){ ctx.fillStyle="#ff5a52"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("!",0,-140); }
   }
   else if(b.kind==="gin"){
     ctx.scale(Math.sign(G.player.x-b.x)||1,1);
@@ -1048,6 +1201,7 @@ function drawBoss(b){
     ctx.fillStyle="#fff"; for(let i=0;i<6;i++) ctx.fillRect(-16+i*6,-98,4,chomp?16:9);
     ctx.fillStyle="#111"; ctx.fillRect(-8,-110,3,3); ctx.fillRect(5,-110,3,3);
     ctx.fillStyle="#ffcf3f"; ctx.beginPath(); ctx.moveTo(-16,-118); ctx.lineTo(-10,-131); ctx.lineTo(-3,-120); ctx.lineTo(3,-133); ctx.lineTo(9,-120); ctx.lineTo(15,-131); ctx.lineTo(18,-118); ctx.closePath(); ctx.fill(); // coroa
+    if(b.state==="chomp" && b.stateT<=0.3 && Math.floor(G.t*10)%2===0){ ctx.fillStyle="#ff5a52"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("!",0,-150); }
     if(chomp){ ctx.fillStyle="#ff8a8a"; ctx.font="bold 15px sans-serif"; ctx.textAlign="center"; ctx.fillText("NHAM!",0,-142); }
   }
   ctx.restore();
@@ -1075,7 +1229,7 @@ function drawHUD(){
   const p=G.player;
   const top=14;
   // corações (vetor, cor fiável em qualquer browser)
-  for(let i=0;i<3;i++){ drawHeart(28+i*32, top+16, 11, i<p.hp); }
+  for(let i=0;i<p.maxHp;i++){ drawHeart(28+i*32, top+16, 11, i<p.hp); }
   // bellies (por baixo dos corações, lado esquerdo — longe dos botões de canto)
   ctx.fillStyle="rgba(0,0,0,.35)"; roundRect(14, top+32, 106, 28, 14); ctx.fill();
   ctx.textBaseline="alphabetic";

@@ -1,5 +1,5 @@
 /* Service worker — cache offline da Aventura Gomu Gomu */
-const CACHE = "gomu-v2";
+const CACHE = "gomu-v3";
 const ASSETS = [
   "./", "index.html", "manifest.webmanifest",
   "icon-192.png", "icon-512.png",
