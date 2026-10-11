@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a3d62">
+<meta name="robots" content="noindex, nofollow">
+<title>Aventura Gomu Gomu</title>
+<meta name="apple-mobile-web-app-title" content="Gomu Gomu">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{
+    --sea:#1b6ca8; --sea2:#0a3d62; --sky:#7fd1ff; --sky2:#bdeaff;
+    --ink:#10243a; --gold:#ffcf3f; --red:#e7322c; --paper:#fff4d6;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0a3d62;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#fff;
+    touch-action:none;overscroll-behavior:none}
+  #game{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%}
+
+  /* ---- Controlos de toque ---- */
+  #pad{position:fixed;inset:0;pointer-events:none;z-index:5}
+  #pad .side{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 14px);display:flex;gap:14px}
+  #pad .left{left:calc(env(safe-area-inset-left) + 14px)}
+  #pad .right{right:calc(env(safe-area-inset-right) + 14px)}
+  .btn{
+    pointer-events:auto;width:72px;height:72px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.55);
+    background:rgba(10,61,98,.42);backdrop-filter:blur(3px);
+    color:#fff;font-size:30px;font-weight:800;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.35);
+  }
+  .btn:active{transform:scale(.92);background:rgba(231,50,44,.55)}
+  .btn.big{width:84px;height:84px;font-size:34px}
+  #pad.hidden{display:none}
+
+  /* ---- Ecrãs (menus) ---- */
+  .screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;
+    justify-content:center;gap:18px;text-align:center;
+    padding:calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 20px);
+    background:
+      radial-gradient(900px 500px at 50% -5%, rgba(127,209,255,.35), transparent 60%),
+      linear-gradient(180deg,#0a3d62 0%, #06263d 100%);
+    overflow:auto}
+  .screen.on{display:flex}
+  .title{font-size:clamp(30px,9vw,54px);font-weight:900;margin:0;line-height:1.05;
+    color:var(--gold);text-shadow:0 3px 0 #b8860b, 0 6px 18px rgba(0,0,0,.5);
+    -webkit-text-stroke:1px #7a5a00}
+  .title small{display:block;font-size:.42em;color:#bdeaff;-webkit-text-stroke:0;text-shadow:none;margin-top:6px;font-weight:700;letter-spacing:.12em}
+  .big-btn{pointer-events:auto;border:none;border-radius:16px;padding:16px 30px;font-size:20px;font-weight:800;
+    background:linear-gradient(180deg,#ff5a52,#e7322c);color:#fff;box-shadow:0 6px 0 #9e1b16,0 10px 20px rgba(0,0,0,.4);
+    min-width:230px}
+  .big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #9e1b16,0 6px 12px rgba(0,0,0,.4)}
+  .big-btn.ghost{background:linear-gradient(180deg,#2b7fb8,#1b6ca8);box-shadow:0 6px 0 #0d4e7a,0 10px 20px rgba(0,0,0,.4)}
+  .big-btn.ghost:active{box-shadow:0 2px 0 #0d4e7a}
+  .hero-img{width:min(46vw,210px);max-height:42vh;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(0,0,0,.55))}
+  .muted{color:#bdeaff;font-size:15px;line-height:1.5;max-width:460px;margin:0}
+
+  /* Mapa de ilhas */
+  .islands{display:flex;flex-direction:column;gap:14px;width:100%;max-width:440px}
+  .island{pointer-events:auto;display:flex;align-items:center;gap:14px;text-align:left;
+    background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);border-radius:18px;padding:12px 14px}
+  .island.locked{opacity:.5;filter:grayscale(.7)}
+  .island .ic{width:58px;height:58px;border-radius:12px;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:30px;flex:0 0 auto}
+  .island h3{margin:0;font-size:18px}
+  .island p{margin:2px 0 0;font-size:13px;color:#bdeaff}
+  .island .go{margin-left:auto;font-size:13px;font-weight:800;background:var(--gold);color:#5a3d00;padding:8px 12px;border-radius:999px}
+  .island.locked .go{background:rgba(255,255,255,.2);color:#fff}
+  .island.cleared .ic::after{content:"⭐";position:relative}
+
+  /* Carta de chefe */
+  .boss-card{background:var(--paper);color:#3a2a10;border-radius:20px;padding:16px;max-width:360px;width:92%;
+    box-shadow:0 18px 50px rgba(0,0,0,.6);border:3px solid #e7322c}
+  .boss-card img{width:100%;max-height:46vh;object-fit:contain;border-radius:12px;background:#cdeafc}
+  .boss-card .lbl{font-weight:900;color:#e7322c;letter-spacing:.14em;font-size:14px;margin:8px 0 2px}
+  .boss-card h2{margin:0 0 4px;font-size:26px}
+
+  /* Roster tripulação */
+  .crew{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:460px}
+  .crew .m{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);border-radius:14px;padding:8px;overflow:hidden}
+  .crew .m img{width:100%;height:110px;object-fit:cover;object-position:top center;border-radius:8px;background:#cdeafc}
+  .crew .m.locked img{filter:grayscale(1) brightness(.5)}
+  .crew .m b{display:block;margin-top:6px;font-size:13px}
+  .crew .m small{color:#bdeaff;font-size:11px}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .fade{animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+  #loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#06263d;color:#bdeaff;font-size:18px}
+</style>
+</head>
+<body>
+<div id="game"><canvas id="cv"></canvas></div>
+
+<!-- Controlos de toque (só durante o jogo) -->
+<div id="pad" class="hidden">
+  <div class="side left">
+    <button class="btn" data-k="left" aria-label="Esquerda">◀</button>
+    <button class="btn" data-k="right" aria-label="Direita">▶</button>
+  </div>
+  <div class="side right">
+    <button class="btn" data-k="punch" aria-label="Soco">👊</button>
+    <button class="btn big" data-k="jump" aria-label="Saltar">⤊</button>
+  </div>
+</div>
+
+<!-- Ecrã: Título -->
+<div class="screen" id="scTitle">
+  <img class="hero-img" src="assets/luffy.webp" alt="Luffy">
+  <h1 class="title">Aventura<br>Gomu Gomu<small>★ Uma aventura pirata ★</small></h1>
+  <button class="big-btn" data-go="map">▶ Jogar</button>
+  <div class="row">
+    <button class="big-btn ghost" data-go="roster">👒 Tripulação</button>
+    <button class="big-btn ghost" data-go="help">❔ Como jogar</button>
+  </div>
+</div>
+
+<!-- Ecrã: Mapa de ilhas -->
+<div class="screen" id="scMap">
+  <h2 class="title" style="font-size:clamp(24px,7vw,40px)">Escolhe uma ilha</h2>
+  <div class="islands" id="islandList"></div>
+  <button class="big-btn ghost" data-go="title">← Voltar</button>
+</div>
+
+<!-- Ecrã: Carta de chefe -->
+<div class="screen" id="scBoss">
+  <div class="boss-card">
+    <img id="bossImg" src="" alt="Chefe">
+    <div class="lbl">⚠ CHEFE DA ILHA ⚠</div>
+    <h2 id="bossName">Chefe</h2>
+    <p class="muted" id="bossTip" style="color:#6b5530"></p>
+  </div>
+  <button class="big-btn" id="bossGo">👊 Lutar!</button>
+</div>
+
+<!-- Ecrã: Vitória de ilha -->
+<div class="screen" id="scWin">
+  <h2 class="title" style="color:#8bffb0;font-size:clamp(26px,8vw,46px)">Ilha conquistada!</h2>
+  <p class="muted" id="winBelly"></p>
+  <div id="winUnlock"></div>
+  <button class="big-btn" data-go="map">🗺️ Mapa</button>
+</div>
+
+<!-- Ecrã: Fim (perdeste) -->
+<div class="screen" id="scOver">
+  <h2 class="title" style="color:#ff8a8a;font-size:clamp(26px,8vw,46px)">Ui! Caíste.</h2>
+  <p class="muted">Não faz mal, pirata. Tenta outra vez!</p>
+  <button class="big-btn" id="retryBtn">↻ Tentar de novo</button>
+  <button class="big-btn ghost" data-go="map">🗺️ Mapa</button>
+</div>
+
+<!-- Ecrã: Tripulação -->
+<div class="screen" id="scRoster">
+  <h2 class="title" style="font-size:clamp(24px,7vw,40px)">A tua Tripulação</h2>
+  <p class="muted">Vence ilhas para juntar novos amigos ao bando dos Chapéus de Palha!</p>
+  <div class="crew" id="crewList"></div>
+  <button class="big-btn ghost" data-go="title">← Voltar</button>
+</div>
+
+<!-- Ecrã: Como jogar -->
+<div class="screen" id="scHelp">
+  <h2 class="title" style="font-size:clamp(24px,7vw,40px)">Como jogar</h2>
+  <p class="muted" style="max-width:480px">
+    És o <b>Luffy</b>! 🌾<br><br>
+    ◀ ▶ — andar<br>
+    ⤊ — saltar (toca outra vez no ar para <b>salto duplo</b>)<br>
+    👊 — <b>Gomu Gomu no Pistol</b>: estica o braço de borracha e dá um murro à distância<br><br>
+    🟡 Apanha as moedas (bellies).<br>
+    🫵 Derrota os Marines com o murro, ou salta-lhes em cima.<br>
+    ⚠ No fim de cada ilha há um <b>chefe</b>. Dá-lhe murros quando ele não estiver a atacar!<br>
+    ❤️ Tens 3 corações. Cuidado com os buracos!
+  </p>
+  <p class="muted">No computador: setas ← → andar, ↑/espaço saltar, <b>X</b> ou <b>Z</b> dar murro.</p>
+  <button class="big-btn ghost" data-go="title">← Voltar</button>
+</div>
+
+<div id="loading">A carregar o navio… ⚓</div>
+
+<script>
+"use strict";
+/* ===================================================================
+   AVENTURA GOMU GOMU — plataformas One Piece (local/privado)
+   Luffy desenhado por código; renders reais da wiki nas molduras.
+   =================================================================== */
+
+/* ---------- Assets ---------- */
+const CHARS = {
+  luffy:  {name:"Luffy",   job:"Capitão"},
+  zoro:   {name:"Zoro",    job:"Espadachim"},
+  nami:   {name:"Nami",    job:"Navegadora"},
+  usopp:  {name:"Usopp",   job:"Atirador"},
+  sanji:  {name:"Sanji",   job:"Cozinheiro"},
+  chopper:{name:"Chopper", job:"Médico"},
+  morgan: {name:"Capitão Morgan", tip:"O «Braço-de-Machado». Dá-lhe murros quando ele baixa o machado!"},
+  buggy:  {name:"Buggy, o Palhaço", tip:"Atira facas! Desvia-te e ataca quando ele parar para recarregar."},
+  arlong: {name:"Arlong", tip:"Carrega como um tubarão. Salta por cima e dá murros quando ele bate na parede!"},
+};
+const IMG = {};
+function loadImages(cb){
+  const keys = Object.keys(CHARS);
+  let left = keys.length;
+  keys.forEach(k=>{
+    const im = new Image();
+    im.onload = im.onerror = ()=>{ if(--left===0) cb(); };
+    im.src = "assets/"+k+".webp";
+    IMG[k]=im;
+  });
+}
+
+/* ---------- Save ---------- */
+const SAVE_KEY="op_gomu_v1";
+const DEFAULT_SAVE={cleared:0, bellies:0, crew:["luffy"]};
+let save = loadSave();
+function loadSave(){ try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));return Object.assign({},DEFAULT_SAVE,s||{});}catch(e){return Object.assign({},DEFAULT_SAVE);} }
+function writeSave(){ try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){} }
+
+/* ---------- Ilhas ---------- */
+const ISLANDS = [
+  {key:"shells", name:"Shells Town", emoji:"⚓", color:"#2b7fb8", boss:"morgan", reward:"zoro", len:3200},
+  {key:"orange", name:"Orange Town", emoji:"🤡", color:"#d18b2b", boss:"buggy",  reward:"nami",  len:3600},
+  {key:"arlong", name:"Arlong Park", emoji:"🦈", color:"#1b8a7a", boss:"arlong", reward:"usopp", len:4000},
+];
+
+/* ---------- Canvas ---------- */
+const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=Math.floor(W*DPR); cv.height=Math.floor(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize",resize); resize();
+
+/* ---------- Input ---------- */
+const keys={left:false,right:false};
+let jumpEdge=false, punchEdge=false;
+function setKey(k,v){
+  if(k==="left"||k==="right") keys[k]=v;
+  else if(v){ if(k==="jump") jumpEdge=true; if(k==="punch") punchEdge=true; }
+}
+document.querySelectorAll("#pad .btn").forEach(b=>{
+  const k=b.dataset.k;
+  const dn=e=>{e.preventDefault();setKey(k,true);};
+  const up=e=>{e.preventDefault();setKey(k,false);};
+  b.addEventListener("pointerdown",dn);
+  b.addEventListener("pointerup",up);
+  b.addEventListener("pointerleave",up);
+  b.addEventListener("pointercancel",up);
+});
+window.addEventListener("keydown",e=>{
+  if(e.repeat) return;
+  if(e.code==="ArrowLeft"){keys.left=true;}
+  else if(e.code==="ArrowRight"){keys.right=true;}
+  else if(e.code==="ArrowUp"||e.code==="Space"){e.preventDefault();jumpEdge=true;}
+  else if(e.code==="KeyX"||e.code==="KeyZ"){punchEdge=true;}
+});
+window.addEventListener("keyup",e=>{
+  if(e.code==="ArrowLeft")keys.left=false;
+  if(e.code==="ArrowRight")keys.right=false;
+});
+
+/* ---------- Estado global ---------- */
+let STATE="title";   // title|map|boss|play|win|over|roster|help
+let G=null;          // estado do jogo a decorrer
+const pad=document.getElementById("pad");
+
+/* ---------- Navegação de ecrãs ---------- */
+const screens={title:"scTitle",map:"scMap",boss:"scBoss",win:"scWin",over:"scOver",roster:"scRoster",help:"scHelp"};
+function show(s){
+  STATE=s;
+  Object.values(screens).forEach(id=>document.getElementById(id).classList.remove("on"));
+  if(screens[s]) document.getElementById(screens[s]).classList.add("on");
+  pad.classList.toggle("hidden", s!=="play");
+  if(s==="map") buildMap();
+  if(s==="roster") buildRoster();
+}
+document.querySelectorAll("[data-go]").forEach(b=>{
+  b.addEventListener("click",()=>{ const g=b.dataset.go; if(g==="map")show("map"); else show(g); });
+});
+
+/* ---------- Mapa ---------- */
+function buildMap(){
+  const list=document.getElementById("islandList"); list.innerHTML="";
+  ISLANDS.forEach((isl,i)=>{
+    const locked = i>save.cleared;
+    const cleared = i<save.cleared;
+    const el=document.createElement("div");
+    el.className="island"+(locked?" locked":"")+(cleared?" cleared":"");
+    el.innerHTML=`<div class="ic">${isl.emoji}</div>
+      <div><h3>${i+1}. ${isl.name}</h3><p>${locked?"🔒 Vence a ilha anterior":("Chefe: "+CHARS[isl.boss].name)}</p></div>
+      <div class="go">${cleared?"⭐ Repetir":(locked?"🔒":"Jogar ▶")}</div>`;
+    if(!locked) el.addEventListener("click",()=>startBossCard(i));
+    list.appendChild(el);
+  });
+}
+
+/* ---------- Carta de chefe ---------- */
+let pendingIsland=0;
+function startBossCard(i){
+  pendingIsland=i;
+  const isl=ISLANDS[i], b=CHARS[isl.boss];
+  document.getElementById("bossImg").src="assets/"+isl.boss+".webp";
+  document.getElementById("bossName").textContent=b.name;
+  document.getElementById("bossTip").textContent=b.tip||"";
+  show("boss");
+}
+document.getElementById("bossGo").addEventListener("click",()=>startLevel(pendingIsland));
+
+/* ---------- Roster ---------- */
+function buildRoster(){
+  const list=document.getElementById("crewList"); list.innerHTML="";
+  ["luffy","zoro","nami","usopp","sanji","chopper"].forEach(k=>{
+    const got = save.crew.includes(k);
+    const el=document.createElement("div");
+    el.className="m"+(got?"":" locked");
+    el.innerHTML=`<img src="assets/${k}.webp" alt="${CHARS[k].name}">
+      <b>${got?CHARS[k].name:"???"}</b><small>${got?CHARS[k].job:"🔒 por juntar"}</small>`;
+    list.appendChild(el);
+  });
+}
+
+/* =====================================================================
+   JOGO — plataformas
+   ===================================================================== */
+const GRAV=2200, MOVE=330, JUMP=820;
+
+function makeLevel(i){
+  const isl=ISLANDS[i];
+  const len=isl.len;
+  const groundY=()=>H-110;          // função: depende do tamanho atual do ecrã
+  // buracos (pits): pares [x1,x2] onde NÃO há chão
+  const pits=[], plats=[], coins=[], enemies=[];
+  // gera conteúdo proceduralmente mas determinístico por ilha
+  let seed=i*9301+49297;
+  const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+  let x=560;
+  while(x < len-520){
+    const r=rnd();
+    if(r<0.26){ // buraco
+      const w=70+rnd()*70; pits.push([x,x+w]);
+      // plataforma a meio do buraco às vezes
+      if(rnd()<0.6) plats.push({x:x+w*0.2,w:60,dy:150+rnd()*60});
+      x+=w+120;
+    } else if(r<0.5){ // plataforma flutuante + moeda
+      const w=70+rnd()*60, dy=150+rnd()*110;
+      plats.push({x,w,dy});
+      coins.push({x:x+w/2,dy:dy+46});
+      x+=w+90+rnd()*80;
+    } else { // chão plano com inimigo/moedas
+      if(rnd()<0.62) enemies.push({x:x+rnd()*120,kind:"marine"});
+      const n=1+(rnd()*3|0);
+      for(let c=0;c<n;c++) coins.push({x:x+40+c*42, dy:70});
+      x+=150+rnd()*120;
+    }
+  }
+  return {isl,len,groundY,pits,plats,coins,enemies,
+    bossX:len-300};
+}
+
+function startLevel(i){
+  const L=makeLevel(i);
+  const gy=L.groundY();
+  G={
+    island:i, L,
+    cam:0,
+    player:{x:120,y:gy-70,w:42,h:64,vx:0,vy:0,ground:true,face:1,jumps:2,
+            hp:3, inv:0, safeX:120},
+    punch:{on:false,t:0,len:0,dir:1,hit:new Set()},
+    coins:L.coins.map(c=>({...c,got:false})),
+    enemies:L.enemies.map(e=>({x:e.x,y:gy-46,w:34,h:46,vx:-60,alive:true,hurt:0})),
+    bellies:0,
+    phase:"run",      // run | bossfight
+    boss:null,
+    fx:[],            // efeitos (texto, partículas)
+    t:0,
+  };
+  show("play");
+}
+
+function spawnBoss(){
+  const isl=ISLANDS[G.island], gy=G.L.groundY();
+  const bx=G.cam + W*0.72;
+  const common={x:bx,y:gy,alive:true,hurt:0,t:0,state:"idle",stateT:0};
+  let b;
+  if(isl.boss==="morgan") b={...common,kind:"morgan",w:70,h:118,hp:6,maxhp:6};
+  else if(isl.boss==="buggy") b={...common,kind:"buggy",w:60,h:100,hp:7,maxhp:7,knives:[]};
+  else b={...common,kind:"arlong",w:66,h:112,hp:8,maxhp:8};
+  G.boss=b; G.phase="bossfight";
+  // limites da arena (fallback caso spawnBoss seja chamado fora do gatilho normal)
+  if(G.bossArenaL==null) G.bossArenaL=G.cam;
+  if(G.bossWall==null)   G.bossWall=G.cam+W;
+  addFx("text", G.cam+W/2, H*0.35, CHARS[isl.boss].name+"!", "#fff");
+}
+
+function addFx(type,x,y,txt,color){ G.fx.push({type,x,y,txt,color,t:0,life:type==="text"?1.2:0.5, vy:type==="pop"?-60:0}); }
+
+/* ---------- Física e lógica ---------- */
+function groundSolidAt(wx){
+  // true se há chão sólido nesse x do mundo
+  for(const p of G.L.pits){ if(wx>p[0]&&wx<p[1]) return false; }
+  return true;
+}
+function update(dt){
+  if(STATE!=="play"||!G) return;
+  G.t+=dt;
+  const p=G.player, gy=G.L.groundY();
+
+  // --- limite de scroll durante boss ---
+  const scrollMax = (G.phase==="bossfight") ? (G.bossWall!=null?G.bossWall:1e9) : G.L.len;
+
+  // --- movimento horizontal ---
+  let ax=0;
+  if(keys.left) ax-=1; if(keys.right) ax+=1;
+  p.vx = ax*MOVE;
+  if(ax!==0) p.face=ax>0?1:-1;
+  p.x += p.vx*dt;
+  if(p.x<40) p.x=40;
+  if(p.x>scrollMax-40) p.x=scrollMax-40;
+
+  // --- salto ---
+  if(jumpEdge){
+    if(p.jumps>0){ p.vy=-JUMP; p.ground=false; p.jumps--; }
+  }
+  jumpEdge=false;
+
+  // --- gravidade ---
+  p.vy += GRAV*dt;
+  p.y += p.vy*dt;
+
+  // --- colisão chão/plataformas ---
+  p.ground=false;
+  // plataformas flutuantes (aterrar por cima)
+  for(const pl of G.L.plats){
+    const py=gy-pl.dy;
+    if(p.vy>=0 && p.x+ p.w/2 > pl.x && p.x - p.w/2 < pl.x+pl.w){
+      const feet=p.y+p.h/2;
+      if(feet>=py && feet<=py+28+p.vy*dt){
+        p.y=py-p.h/2; p.vy=0; p.ground=true;
+      }
+    }
+  }
+  // chão base
+  if(!p.ground){
+    const feet=p.y+p.h/2;
+    if(feet>=gy){
+      if(groundSolidAt(p.x) || G.phase==="bossfight"){
+        p.y=gy-p.h/2; p.vy=0; p.ground=true;
+      }
+    }
+  }
+  if(p.ground){ p.jumps=2; if(groundSolidAt(p.x)) p.safeX=Math.min(p.x,scrollMax-60); }
+
+  // --- cair num buraco / fora do ecrã ---
+  if(p.y - p.h/2 > H+40){
+    hurtPlayer(true);
+    p.x=Math.max(60,p.safeX-30); p.y=gy-200; p.vy=0;
+  }
+
+  // --- soco Gomu Gomu ---
+  const pc=G.punch;
+  if(punchEdge && !pc.on){
+    pc.on=true; pc.t=0; pc.dir=p.face; pc.hit.clear();
+    addFx("pop", p.x+p.face*30, p.y-30, "Gomu Gomu!", "#ffe27a");
+  }
+  punchEdge=false;
+  if(pc.on){
+    pc.t+=dt;
+    const MAXLEN=150, DUR=0.26;
+    const prog = pc.t/DUR;
+    pc.len = MAXLEN*Math.sin(Math.min(prog,1)*Math.PI); // estica e recolhe
+    if(pc.t>=DUR){ pc.on=false; pc.len=0; }
+    // alcance do punho
+    const fist = p.x + pc.dir*(p.w/2+pc.len);
+    // acertar inimigos
+    for(const e of G.enemies){
+      if(e.alive && !pc.hit.has(e) && Math.abs(fist-e.x)<26 && Math.abs(p.y-e.y)<46){
+        e.alive=false; pc.hit.add(e); gainBelly(2, e.x,e.y);
+      }
+    }
+    // acertar chefe
+    if(G.boss && G.boss.alive && !pc.hit.has(G.boss)){
+      const b=G.boss;
+      if(Math.abs(fist-b.x)<b.w/2+16 && Math.abs(p.y-(b.y-b.h/2))<b.h/2+30){
+        if(canHitBoss(b)){ b.hp--; b.hurt=0.4; pc.hit.add(b); addFx("pop",b.x,b.y-b.h,"-1","#fff");
+          if(b.hp<=0) killBoss(); }
+      }
+    }
+  }
+
+  // --- inimigos ---
+  for(const e of G.enemies){
+    if(!e.alive) continue;
+    if(e.hurt>0) e.hurt-=dt;
+    // andar e inverter nas bordas/buracos
+    e.x += e.vx*dt;
+    if(!groundSolidAt(e.x)) e.vx*=-1;
+    // perseguir ligeiramente o jogador se perto
+    if(Math.abs(e.x-p.x)<260){ e.vx = (p.x<e.x?-1:1)*70; }
+    // colisão com jogador
+    if(p.inv<=0 && Math.abs(e.x-p.x)<(e.w/2+p.w/2-6) && Math.abs(e.y-p.y)<(e.h/2+p.h/2-8)){
+      // salto em cima?
+      if(p.vy>0 && (p.y+p.h/2) < e.y){
+        e.alive=false; p.vy=-JUMP*0.6; gainBelly(2,e.x,e.y);
+      } else {
+        hurtPlayer();
+      }
+    }
+  }
+
+  // --- moedas ---
+  for(const c of G.coins){
+    if(c.got) continue;
+    const cy=gy-c.dy;
+    if(Math.abs(c.x-p.x)<30 && Math.abs(cy-p.y)<42){ c.got=true; gainBelly(1,c.x,cy); }
+  }
+
+  // --- câmara ---
+  const target = Math.max(0, Math.min(p.x - W*0.32, scrollMax - W));
+  G.cam += (target-G.cam)*Math.min(1,dt*8);
+  if(G.cam<0)G.cam=0;
+
+  // --- disparar boss ---
+  if(G.phase==="run" && p.x > G.L.bossX - W*0.5){
+    spawnBoss();
+    G.bossWall = G.cam + W;        // parede invisível à direita
+    G.bossArenaL = G.cam;          // esquerda
+  }
+
+  // --- IA do chefe ---
+  if(G.boss && G.boss.alive) updateBoss(dt);
+  // facas do buggy
+  if(G.boss && G.boss.knives){
+    for(const k of G.boss.knives){
+      if(!k.alive) continue;
+      k.x+=k.vx*dt; k.y+=k.vy*dt; k.vy+=GRAV*0.35*dt;
+      if(p.inv<=0 && Math.abs(k.x-p.x)<26 && Math.abs(k.y-p.y)<34){ k.alive=false; hurtPlayer(); }
+      if(k.y>H+40||k.x<G.cam-60||k.x>G.cam+W+60) k.alive=false;
+    }
+    G.boss.knives=G.boss.knives.filter(k=>k.alive);
+  }
+
+  // --- efeitos ---
+  for(const f of G.fx){ f.t+=dt; f.y+=f.vy*dt; }
+  G.fx=G.fx.filter(f=>f.t<f.life);
+
+  if(p.inv>0) p.inv-=dt;
+}
+
+function canHitBoss(b){
+  // só leva dano quando não está a atacar (justiça para miúdos)
+  if(b.kind==="morgan") return b.state!=="swing";
+  if(b.kind==="arlong")  return b.state==="stun";
+  return true; // buggy pode levar sempre
+}
+
+function updateBoss(dt){
+  const b=G.boss, p=G.player, gy=G.L.groundY();
+  b.t+=dt; b.stateT+=dt; if(b.hurt>0)b.hurt-=dt;
+  b.y=gy;
+  // manter chefe dentro da arena
+  const L=G.bossArenaL+60, R=G.bossWall-60;
+
+  if(b.kind==="morgan"){
+    if(b.state==="idle"){
+      // aproxima-se do jogador
+      b.x += Math.sign(p.x-b.x)*95*dt;
+      if(Math.abs(b.x-p.x)<110 && b.stateT>0.8){ b.state="wind"; b.stateT=0; }
+    } else if(b.state==="wind"){ // prepara o machado
+      if(b.stateT>0.6){ b.state="swing"; b.stateT=0; }
+    } else if(b.state==="swing"){
+      if(b.stateT<0.25 && p.inv<=0 && Math.abs(b.x-p.x)<95 && Math.abs(p.y-b.y)<110) hurtPlayer();
+      if(b.stateT>0.5){ b.state="idle"; b.stateT=0; }
+    }
+  }
+  else if(b.kind==="buggy"){
+    if(b.state==="idle"){
+      b.x += Math.sign((G.bossArenaL+W*0.7)-b.x)*40*dt; // mantém-se afastado
+      if(b.stateT>1.3){ // atira facas
+        for(let a=-1;a<=1;a++){
+          b.knives.push({x:b.x,y:b.y-70,vx:(p.x<b.x?-1:1)*(260)+a*0,vy:-260+a*140,alive:true});
+        }
+        b.state="reload"; b.stateT=0;
+      }
+    } else if(b.state==="reload"){
+      // fica vulnerável e parado um bocado
+      if(b.stateT>1.1){ b.state="idle"; b.stateT=0; }
+    }
+  }
+  else if(b.kind==="arlong"){
+    if(b.state==="idle"){
+      if(b.stateT>0.9){ b.state="charge"; b.stateT=0; b.dir=Math.sign(p.x-b.x)||1; }
+    } else if(b.state==="charge"){
+      b.x += b.dir*430*dt;
+      if(p.inv<=0 && Math.abs(b.x-p.x)<70 && Math.abs(p.y-b.y)<110) hurtPlayer();
+      if(b.x<L||b.x>R){ b.x=Math.max(L,Math.min(R,b.x)); b.state="stun"; b.stateT=0; }
+    } else if(b.state==="stun"){
+      if(b.stateT>1.4){ b.state="idle"; b.stateT=0; }
+    }
+  }
+  b.x=Math.max(L,Math.min(R,b.x));
+}
+
+function killBoss(){
+  G.boss.alive=false;
+  addFx("text", G.cam+W/2, H*0.35, "Chefe derrotado! 🎉", "#8bffb0");
+  const delay=1.0; setTimeout(winLevel, 900);
+}
+function winLevel(){
+  if(STATE!=="play") return;
+  const i=G.island, isl=ISLANDS[i];
+  save.bellies += G.bellies;
+  let unlockedTxt="";
+  if(i>=save.cleared){ save.cleared=i+1;
+    if(isl.reward && !save.crew.includes(isl.reward)){ save.crew.push(isl.reward); }
+  }
+  writeSave();
+  document.getElementById("winBelly").innerHTML=`Apanhaste <b>฿ ${G.bellies}</b> nesta ilha!`;
+  const wu=document.getElementById("winUnlock");
+  if(isl.reward){
+    const r=isl.reward;
+    wu.innerHTML=`<p class="muted">Novo membro da tripulação:</p>
+      <img src="assets/${r}.webp" style="width:140px;max-height:34vh;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))">
+      <h3 style="margin:6px 0 0;color:#ffcf3f">👒 ${CHARS[r].name} juntou-se!</h3>`;
+  } else wu.innerHTML="";
+  show("win");
+}
+
+function gainBelly(n,x,y){ G.bellies+=n; if(x!=null)addFx("pop",x,y-20,"+"+n,"#ffe27a"); }
+function hurtPlayer(fall){
+  const p=G.player; if(p.inv>0 && !fall) return;
+  p.hp--; p.inv=1.1;
+  addFx("pop",p.x,p.y-40,"Ai!","#ff8a8a");
+  if(p.hp<=0){ setTimeout(()=>{ if(STATE==="play") show("over"); },400); }
+}
+document.getElementById("retryBtn").addEventListener("click",()=>startLevel(G?G.island:0));
+
+/* =====================================================================
+   DESENHO
+   ===================================================================== */
+function render(){
+  const isl = G?ISLANDS[G.island]:ISLANDS[0];
+  // céu
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#9fe0ff"); g.addColorStop(.55,"#cdeafc"); g.addColorStop(1,"#eafaff");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  if(!G){ return; }
+  const cam=G.cam, gy=G.L.groundY();
+
+  drawParallax(cam, isl);
+
+  ctx.save();
+  ctx.translate(-cam,0);
+
+  // mar ao fundo dos buracos + chão
+  drawGround(cam,gy,isl);
+
+  // plataformas
+  for(const pl of G.L.plats){ drawPlat(pl.x, gy-pl.dy, pl.w); }
+
+  // moedas
+  for(const c of G.coins){ if(!c.got) drawBelly(c.x, gy-c.dy); }
+
+  // inimigos
+  for(const e of G.enemies){ if(e.alive) drawMarine(e); }
+
+  // chefe
+  if(G.boss && G.boss.alive) drawBoss(G.boss);
+  if(G.boss && G.boss.knives) for(const k of G.boss.knives) drawKnife(k);
+
+  // jogador
+  drawLuffy(G.player, G.punch);
+
+  // efeitos no mundo
+  for(const f of G.fx){ if(f.type==="pop") drawPop(f); }
+
+  ctx.restore();
+
+  // HUD (ecrã)
+  drawHUD();
+  for(const f of G.fx){ if(f.type==="text") drawBigText(f); }
+}
+
+function drawParallax(cam,isl){
+  // nuvens + ilha distante
+  ctx.save();
+  ctx.globalAlpha=.85; ctx.fillStyle="#ffffff";
+  for(let i=0;i<6;i++){
+    const x=((i*420 - cam*0.25)% (W+500)+W+500)%(W+500)-250;
+    const y=60+ (i%3)*46;
+    cloud(x,y, 60+ (i%2)*26);
+  }
+  ctx.restore();
+  // linha de mar distante
+  ctx.fillStyle="rgba(27,108,168,.35)";
+  ctx.fillRect(0,H*0.5,W,6);
+}
+function cloud(x,y,r){ ctx.beginPath();
+  ctx.arc(x,y,r*0.5,0,7); ctx.arc(x+r*0.5,y+6,r*0.42,0,7); ctx.arc(x-r*0.5,y+8,r*0.4,0,7); ctx.arc(x+r*0.1,y-8,r*0.4,0,7);
+  ctx.fill(); }
+
+function drawGround(cam,gy,isl){
+  // mar no fundo
+  ctx.fillStyle="#1b6ca8"; ctx.fillRect(cam-20,gy,W+40,H-gy+20);
+  // relva/areia por cima do chão, exceto buracos
+  const top=gy;
+  const x0=cam-20, x1=cam+W+20;
+  ctx.fillStyle = (isl.key==="arlong")?"#2bb3a0":(isl.key==="orange")?"#d9a24a":"#5bbf5b";
+  ctx.strokeStyle="rgba(0,0,0,.12)";
+  // desenhar em segmentos, saltando os buracos
+  let x=x0;
+  while(x<x1){
+    if(groundSolidAt(x)||G.phase==="bossfight"){
+      let seg=x;
+      while(seg<x1 && (groundSolidAt(seg)||G.phase==="bossfight")) seg+=8;
+      ctx.fillRect(x,top,seg-x,H-top+20);
+      // faixa de terra mais escura
+      ctx.fillStyle="rgba(90,50,20,.25)"; ctx.fillRect(x,top+16,seg-x,10);
+      ctx.fillStyle=(isl.key==="arlong")?"#2bb3a0":(isl.key==="orange")?"#d9a24a":"#5bbf5b";
+      x=seg;
+    } else x+=8;
+  }
+}
+function drawPlat(x,y,w){
+  ctx.fillStyle="#8a5a2b"; roundRect(x,y,w,16,6); ctx.fill();
+  ctx.fillStyle="#5bbf5b"; roundRect(x,y-6,w,10,5); ctx.fill();
+}
+function drawBelly(x,y){
+  const t=G.t*4;
+  ctx.save(); ctx.translate(x,y+Math.sin(t)*3);
+  ctx.fillStyle="#ffcf3f"; ctx.strokeStyle="#b8860b"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(0,0,12,0,7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle="#b8860b"; ctx.font="bold 14px -apple-system,sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("฿",0,1); ctx.restore();
+}
+
+/* ---- Luffy (chibi, por código) ---- */
+function drawLuffy(p,pc){
+  const blink = (p.inv>0 && Math.floor(G.t*14)%2===0);
+  ctx.save();
+  ctx.translate(p.x,p.y);
+  if(blink) ctx.globalAlpha=0.45;
+  const f=p.face;
+  const squash = p.ground? (keys.left||keys.right? 1+Math.sin(G.t*18)*0.03:1) : (p.vy<0?1.08:0.94);
+  ctx.scale(f,1); ctx.scale(1/Math.max(squash,.8),squash);
+
+  // braço de borracha (Gomu Gomu) — desenhado primeiro (atrás)
+  if(pc.on && pc.len>4){
+    ctx.strokeStyle="#f2b48a"; ctx.lineWidth=11; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(10,-6); ctx.lineTo(20+pc.len,-6); ctx.stroke();
+    // punho
+    ctx.fillStyle="#f2b48a"; ctx.beginPath(); ctx.arc(22+pc.len,-6,12,0,7); ctx.fill();
+    ctx.strokeStyle="rgba(0,0,0,.18)"; ctx.lineWidth=2; ctx.stroke();
+  }
+
+  // pernas (azul)
+  ctx.fillStyle="#1f5fd0";
+  const step = p.ground&&(keys.left||keys.right)? Math.sin(G.t*18)*5:0;
+  roundRect(-13,14,11,16,3); ctx.fill();
+  roundRect(3,14,11,16,3); ctx.fill();
+  ctx.save(); ctx.translate(0,0);
+  ctx.fillStyle="#1f5fd0"; ctx.fillRect(-13,14+step,11,14); ctx.fillRect(3,14-step,11,14); ctx.restore();
+
+  // colete vermelho (corpo)
+  ctx.fillStyle="#e7322c"; roundRect(-16,-14,32,30,8); ctx.fill();
+  ctx.fillStyle="#f2cba0"; ctx.fillRect(-4,-14,8,24); // peito aberto
+  // braço parado (quando não dá murro)
+  if(!(pc.on&&pc.len>4)){ ctx.fillStyle="#e7322c"; roundRect(10,-10,9,20,4); ctx.fill(); ctx.fillStyle="#f2b48a"; ctx.beginPath(); ctx.arc(14,12,6,0,7); ctx.fill(); }
+  ctx.fillStyle="#e7322c"; roundRect(-19,-10,9,20,4); ctx.fill(); ctx.fillStyle="#f2b48a"; ctx.beginPath(); ctx.arc(-15,12,6,0,7); ctx.fill();
+
+  // cabeça
+  ctx.fillStyle="#f6c79a"; ctx.beginPath(); ctx.arc(0,-28,16,0,7); ctx.fill();
+  // cabelo
+  ctx.fillStyle="#1a1a1a"; ctx.beginPath(); ctx.arc(0,-34,15,Math.PI,0); ctx.fill();
+  ctx.fillRect(-15,-34,30,5);
+  // olhos
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(-5,-28,4.2,0,7); ctx.arc(6,-28,4.2,0,7); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(-4,-28,2.1,0,7); ctx.arc(7,-28,2.1,0,7); ctx.fill();
+  // cicatriz
+  ctx.strokeStyle="#c44"; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(-10,-22); ctx.lineTo(-10,-18); ctx.moveTo(-12,-20); ctx.lineTo(-8,-20); ctx.stroke();
+  // sorriso
+  ctx.strokeStyle="#5a2a12"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(1,-22,6,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+  // chapéu de palha
+  ctx.fillStyle="#f2c14e"; ctx.beginPath(); ctx.ellipse(0,-40,22,7,0,0,7); ctx.fill(); // aba
+  ctx.beginPath(); ctx.ellipse(0,-44,13,10,0,Math.PI,0); ctx.fill(); // copa
+  ctx.fillStyle="#e7322c"; ctx.fillRect(-13,-44,26,4); // fita vermelha
+  ctx.restore();
+}
+
+/* ---- Marine ---- */
+function drawMarine(e){
+  ctx.save(); ctx.translate(e.x,e.y);
+  const f=Math.sign(e.vx)||1; ctx.scale(f,1);
+  const step=Math.sin(G.t*14+e.x)*4;
+  // pernas
+  ctx.fillStyle="#2a3a66"; ctx.fillRect(-9,8,7,14+step*0); ctx.fillRect(2,8,7,14);
+  // casaco branco
+  ctx.fillStyle="#f3f3f3"; roundRect(-12,-10,24,22,6); ctx.fill();
+  ctx.fillStyle="#2a3a66"; ctx.fillRect(-12,2,24,5); // cinto
+  // cabeça
+  ctx.fillStyle="#f6c79a"; ctx.beginPath(); ctx.arc(0,-18,10,0,7); ctx.fill();
+  // boné marinha
+  ctx.fillStyle="#1f2f5c"; ctx.beginPath(); ctx.ellipse(0,-26,12,5,0,0,7); ctx.fill();
+  ctx.fillRect(-11,-28,22,5);
+  ctx.fillStyle="#fff"; ctx.fillRect(-11,-24,22,2);
+  // olhos
+  ctx.fillStyle="#111"; ctx.fillRect(-4,-19,2,3); ctx.fillRect(2,-19,2,3);
+  if(e.hurt>0){ ctx.fillStyle="rgba(255,255,255,.6)"; roundRect(-12,-28,24,40,6); ctx.fill(); }
+  ctx.restore();
+}
+function drawKnife(k){
+  ctx.save(); ctx.translate(k.x,k.y); ctx.rotate(Math.atan2(k.vy,k.vx));
+  ctx.fillStyle="#cfd6e4"; ctx.beginPath(); ctx.moveTo(-10,-3); ctx.lineTo(10,0); ctx.lineTo(-10,3); ctx.closePath(); ctx.fill();
+  ctx.fillStyle="#5a3a12"; ctx.fillRect(-14,-2,5,4); ctx.restore();
+}
+
+/* ---- Chefes (silhueta por código) ---- */
+function drawBoss(b){
+  const flash = b.hurt>0 && Math.floor(G.t*18)%2===0;
+  ctx.save(); ctx.translate(b.x,b.y);
+  if(b.kind==="morgan"){
+    ctx.scale(Math.sign(G.player.x-b.x)||1,1);
+    // corpo cinza
+    ctx.fillStyle=flash?"#fff":"#8a97a8"; roundRect(-30,-100,60,88,12); ctx.fill();
+    // pernas
+    ctx.fillStyle="#3a3a3a"; ctx.fillRect(-24,-14,18,14); ctx.fillRect(6,-14,18,14);
+    // cabeça + maxilar de aço
+    ctx.fillStyle="#c79a6a"; ctx.beginPath(); ctx.arc(0,-114,18,0,7); ctx.fill();
+    ctx.fillStyle="#cfd6e4"; roundRect(-14,-108,28,10,4); ctx.fill(); // queixo metal
+    ctx.fillStyle="#111"; ctx.fillRect(-9,-120,4,4); ctx.fillRect(5,-120,4,4);
+    // braço-machado
+    const wind = b.state==="wind"? -1.0 : b.state==="swing"? (b.stateT<0.25?0.8:0.4):0.1;
+    ctx.save(); ctx.translate(22,-80); ctx.rotate(wind);
+    ctx.fillStyle="#8a97a8"; ctx.fillRect(0,-6,14,12);
+    ctx.fillStyle="#cfd6e4"; ctx.beginPath(); ctx.moveTo(14,-18); ctx.lineTo(40,-6); ctx.lineTo(14,6); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    if(b.state==="wind"){ ctx.fillStyle="#ffe27a"; ctx.font="bold 20px sans-serif"; ctx.textAlign="center"; ctx.fillText("!",-24,-120); }
+  }
+  else if(b.kind==="buggy"){
+    ctx.scale(Math.sign(G.player.x-b.x)||1,1);
+    // capa
+    ctx.fillStyle=flash?"#fff":"#6a3fb0"; roundRect(-32,-96,64,84,14); ctx.fill();
+    // corpo listado
+    ctx.fillStyle="#e7322c"; ctx.fillRect(-18,-90,36,70);
+    ctx.fillStyle="#fff"; for(let i=0;i<4;i++) ctx.fillRect(-18,-86+i*16,36,7);
+    // cabeça branca
+    ctx.fillStyle="#f3f3f3"; ctx.beginPath(); ctx.arc(0,-108,18,0,7); ctx.fill();
+    // cabelo azul
+    ctx.fillStyle="#2b7fb8"; ctx.beginPath(); ctx.arc(0,-116,18,Math.PI,0); ctx.fill();
+    // nariz vermelho
+    ctx.fillStyle="#e7322c"; ctx.beginPath(); ctx.arc(0,-104,6,0,7); ctx.fill();
+    ctx.fillStyle="#111"; ctx.fillRect(-8,-112,3,3); ctx.fillRect(6,-112,3,3);
+    if(b.state==="reload"){ ctx.fillStyle="#8bffb0"; ctx.font="bold 16px sans-serif"; ctx.textAlign="center"; ctx.fillText("recarrega!",0,-134); }
+  }
+  else { // arlong
+    const charging=b.state==="charge";
+    ctx.scale((b.dir||Math.sign(G.player.x-b.x)||1),1);
+    ctx.fillStyle=flash?"#fff":(b.state==="stun"?"#7fd1c8":"#2b8aa0"); roundRect(-30,-98,60,86,12); ctx.fill();
+    ctx.fillStyle="#1f6a7a"; ctx.fillRect(-24,-14,18,14); ctx.fillRect(6,-14,18,14);
+    // cabeça com nariz-serra
+    ctx.fillStyle="#2b8aa0"; ctx.beginPath(); ctx.arc(0,-112,18,0,7); ctx.fill();
+    ctx.fillStyle="#cfe8ee"; ctx.beginPath(); ctx.moveTo(10,-114); ctx.lineTo(54,-110); ctx.lineTo(10,-104); ctx.closePath(); ctx.fill();
+    // dentes
+    ctx.fillStyle="#fff"; for(let i=0;i<5;i++){ ctx.beginPath(); ctx.moveTo(-10+i*6,-102); ctx.lineTo(-7+i*6,-96); ctx.lineTo(-4+i*6,-102); ctx.fill(); }
+    ctx.fillStyle="#111"; ctx.fillRect(-8,-118,3,3); ctx.fillRect(4,-118,3,3);
+    if(b.state==="stun"){ ctx.fillStyle="#ffe27a"; ctx.font="bold 18px sans-serif"; ctx.textAlign="center"; ctx.fillText("★ tonto ★",0,-134); }
+  }
+  ctx.restore();
+  // barra de vida
+  const bw=120, bx=b.x-bw/2, by=b.y-b.h-54;
+  ctx.fillStyle="rgba(0,0,0,.4)"; roundRect(bx-2,by-2,bw+4,12,6); ctx.fill();
+  ctx.fillStyle="#e7322c"; roundRect(bx,by,bw*Math.max(0,b.hp/b.maxhp),8,4); ctx.fill();
+}
+
+function drawPop(f){
+  const a=1-f.t/f.life;
+  ctx.globalAlpha=a; ctx.fillStyle=f.color||"#fff";
+  ctx.font="bold 18px -apple-system,sans-serif"; ctx.textAlign="center";
+  ctx.fillText(f.txt,f.x,f.y); ctx.globalAlpha=1;
+}
+function drawBigText(f){
+  const a=f.t<0.2?f.t/0.2:(f.t>f.life-0.3?(f.life-f.t)/0.3:1);
+  ctx.save(); ctx.globalAlpha=Math.max(0,a);
+  ctx.fillStyle=f.color||"#fff"; ctx.strokeStyle="rgba(0,0,0,.5)"; ctx.lineWidth=5;
+  ctx.font="900 34px -apple-system,sans-serif"; ctx.textAlign="center";
+  ctx.strokeText(f.txt,W/2,H*0.32); ctx.fillText(f.txt,W/2,H*0.32); ctx.restore();
+}
+
+function drawHUD(){
+  const p=G.player;
+  const top=12;
+  // corações (vetor, cor fiável em qualquer browser)
+  for(let i=0;i<3;i++){ drawHeart(28+i*32, top+16, 11, i<p.hp); }
+  // bellies
+  ctx.fillStyle="rgba(0,0,0,.35)"; roundRect(W-118,top,104,30,15); ctx.fill();
+  ctx.fillStyle="#ffcf3f"; ctx.font="bold 18px -apple-system,sans-serif"; ctx.textAlign="left";
+  ctx.fillText("฿ "+G.bellies, W-104, top+21);
+  // nome da ilha
+  ctx.fillStyle="rgba(0,0,0,.3)"; ctx.font="bold 13px -apple-system,sans-serif"; ctx.textAlign="center";
+  ctx.fillText(ISLANDS[G.island].name, W/2, top+18);
+}
+
+function drawHeart(cx,cy,s,full){
+  ctx.save(); ctx.translate(cx,cy); ctx.scale(s/16,s/16);
+  ctx.beginPath();
+  ctx.moveTo(0,5);
+  ctx.bezierCurveTo(-2,0,-9,-1,-9,-7);
+  ctx.bezierCurveTo(-9,-12,-4,-13,0,-8);
+  ctx.bezierCurveTo(4,-13,9,-12,9,-7);
+  ctx.bezierCurveTo(9,-1,2,0,0,5);
+  ctx.closePath();
+  ctx.fillStyle = full? "#ff4b57" : "rgba(255,255,255,.28)";
+  ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle= full? "#c42633":"rgba(255,255,255,.55)"; ctx.stroke();
+  ctx.restore();
+}
+/* ---- util desenho ---- */
+function roundRect(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* =====================================================================
+   Loop
+   ===================================================================== */
+let last=0;
+function frame(ts){
+  const dt=Math.min(0.033,(ts-last)/1000||0); last=ts;
+  update(dt);
+  if(STATE==="play") render();
+  else { ctx.clearRect(0,0,W,H); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Arranque ---------- */
+loadImages(()=>{
+  document.getElementById("loading").style.display="none";
+  show("title");
+  requestAnimationFrame(frame);
+});
+
+/* service worker (só funciona se servido por http; ignora em file://) */
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
